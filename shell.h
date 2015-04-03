@@ -1,8 +1,22 @@
+// General
 #define OK 		0
 #define SYSERR 		1
 #define ERRORS 		2
-#define BYE 		3
+#define MAX_LENGTH	1024
 
+// For do_it switch
+#define SETENV		1
+#define PRINTENV	2
+#define UNSETENV	3
+#define CD 		4
+#define ALIAS 		5
+#define UNALIAS 	6
+#define LS		7
+#define PWD		8
+#define DEBUG		9
+#define BYE		10
+
+// Colors
 #define KNRM  "\x1B[0m"
 #define KRED  "\x1B[31m"
 #define KGRN  "\x1B[32m"
@@ -24,10 +38,23 @@
   printf(KNRM "normal\n" RESET);
 */
 
+// Globals
+extern char** environ;
 int builtin;
 int CMD;
 
 char* PATH;
 char* HOME;
 char* PWD;
+
+char* setenvName;
+char* setenvValue;
+char* unsetenvName;
+
+char* cdPath;
+
+char* aliasName;
+char* aliasValue;
+char* unaliasName;
+
 

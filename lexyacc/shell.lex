@@ -3,16 +3,16 @@
 #include "y.tab.h"
 %}	
 %%
-setenv			return SETENV;
-printenv		return PRINTENV;
-unsetenv		return UNSETENV;
-cd			return CD;
-alias			return lexALIAS;
-unalias			return lexUNALIAS;
-ls			return LS;
-pwd			return PWD;
-debug			return DEBUG;
-bye			return BYE;
+setenv			return xSETENV;
+printenv		return xPRINTENV;
+unsetenv		return xUNSETENV;
+cd			return xCD;
+alias			return xALIAS;
+unalias			return xUNALIAS;
+ls			return xLS;
+pwd			return xPWD;
+debug			return xDEBUG;
+bye			return xBYE;
 [0-9]+			return NUMBER;
 [0-9a-zA-Z/:.~\-?*]+	{yylval.strval = strdup(yytext); return VAR;}
 \n			return 0; /* enter keypress */

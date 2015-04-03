@@ -2,8 +2,92 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <dirent.h>
 #include "shell.h"
 
+//
+// Built-ins
+//
+void xsetenv() {
+	printf("set env %s to %s \n", setenvName, setenvValue);
+	setenv(setenvName, setenvValue, 1);
+}
+
+void xprintenv() {
+	int i = 0;
+	while (environ[i]) {
+		printf("%s \n", environ[i++]);
+	}
+}
+
+void xunsetenv() {
+	printf("unset env %s \n", unsetenvName);
+	unsetenv(unsetenvName);
+}
+
+void xcd() {
+	if (cdPAth == NULL) {
+		char* home = getenv("HOME");
+		chdir(home);
+	}
+	else {
+		if (chdir(cdPath) == -1) {
+			printf("Error: [%s] is not a valid directory. \n", cdPath);
+		}
+	}
+}
+
+void xalias() {
+	if (aliasName == NULL && aliasValue == NULL) {
+		printf("alias dump");
+	}
+	else {
+		printf("alias %s to %s \n", aliasName, aliasValue);
+	}
+}
+
+void xunalias() {
+	printf("unalias %s \n", unaliasName);
+}
+
+void xls() {
+	DIR *directory;
+	directory = opendir(".");
+
+	struct dirent *fileListing;
+
+	if (directory) {
+		while ((fileListing = readdir(directory)) != NULL) {
+			printf("%s \n", fileListing->d_name);
+		}
+		closedir(directory);
+	}
+	else {
+		printf("Error: Could not get list of files. \n");
+	}
+}
+
+void xpwd() {
+	printf("pwd \n");
+}
+
+void xdebug() {
+	printf("[Debugging info]\n");
+	printf("PATH: %s \n", getenv("PATH"));
+	printf("HOME: %s \n", getenv("HOME"));
+	char pwd[MAX_LENGTH];
+	getcwd(pwd, MAX_LENGTH);
+	printf("PWD: %s \n", pwd);
+}
+
+void xbye() {
+	printf(KGRN "Exiting [shellX] \n" RESET);
+	exit(0);
+}
+
+//
+// shellX code
+//
 void shell_init() {
 	// init all variables.
 	builtin = 0;
@@ -47,31 +131,35 @@ void processCommand() {
 	// run built-in commands – no fork
 	// no exec; only your code + Unix
 	// system calls. 
-	if (builtin > 0) do_it();
+	if (builtin != 0) do_it();
 	// execute general commands
 	// using fork and exec
 	else execute_it();
 }
 
 int do_it() {
-	/*switch (builtin) {
+	switch (builtin) {
 		case SETENV:
-			;
+			xsetenv();
 		case PRINTENV:
-			;
+			xprintenv();
 		case UNSETENV:
-			;
+			xunsetenv();
 		case CD: 
-			changedir(newCDPath);
-		case CDHOME:
-			gohome();
-		case ALIAS: // e.g., alias(); alias(name, word);
-			;
+			xcd();
+		case ALIAS:
+			xalias();
 		case UNALIAS:
-			;
+			xunalias();
+		case LS:
+			xls();
+		case PWD:
+			xpwd();
+		case DEBUG:
+			xdebug();
 		case BYE:
-			exit(0);
-	}*/
+			xbye();
+	}
 }
 
 int execute_it() {
