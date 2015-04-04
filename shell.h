@@ -1,7 +1,6 @@
 // General
 #define OK 		0
 #define SYSERR 		1
-#define ERRORS 		2
 #define MAX_LENGTH	1024
 
 // For do_it switch
@@ -12,9 +11,9 @@
 #define ALIAS 		5
 #define UNALIAS 	6
 #define LS		7
-#define PWD		8
+#define PWD 		8
 #define DEBUG		9
-#define BYE		10
+#define BYE 		10
 
 // Colors
 #define KNRM  "\x1B[0m"
@@ -40,12 +39,12 @@
 
 // Globals
 extern char** environ;
+extern char* get_current_dir_name();
 int builtin;
 int CMD;
 
 char* PATH;
 char* HOME;
-char* PWD;
 
 char* setenvName;
 char* setenvValue;

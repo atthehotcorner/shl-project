@@ -4,9 +4,8 @@
 #include <string.h>
 #include "shell.h"
 
-int yyerror(const char *str) {
-	fprintf(stderr, "Error: %s\n", str);
-	return 0;
+void yyerror(const char *str) {
+	fprintf(stderr, "Error: %s \n", str);
 }
 
 int yywrap() {
@@ -19,7 +18,6 @@ int yywrap() {
 }
 %token xSETENV xPRINTENV xUNSETENV xCD xALIAS xUNALIAS xLS xPWD xDEBUG xBYE NUMBER
 %token <strval> VAR
-%token <intval> VAR
 %%
 
 commands: 
@@ -84,27 +82,26 @@ unalias_case:
 	};
 
 ls_case: 
-	LS {
+	xLS {
 		CMD = OK;
 		builtin = LS;
 	};
 
 pwd_case:
-	PWD {
+	xPWD {
 		CMD = OK;
 		builtin = PWD;
 	};
 
 debug_case: 
-	DEBUG {
+	xDEBUG {
 		CMD = OK;
 		builtin = DEBUG;
 	};
 
 bye_case:
-	BYE {
-		CMD = OK;
-		builtin = BYE;
+	xBYE {
+		CMD = BYE;
 	};
 
 /*variable_case:

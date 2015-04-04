@@ -9,8 +9,8 @@
 // Built-ins
 //
 void xsetenv() {
-	printf("set env %s to %s \n", setenvName, setenvValue);
-	setenv(setenvName, setenvValue, 1);
+	int success = setenv(setenvName, setenvValue, 1);
+	if (success != 0) printf("Error: Could not set %s as %s. \n", setenvName, setenvValue);
 }
 
 void xprintenv() {
@@ -21,25 +21,25 @@ void xprintenv() {
 }
 
 void xunsetenv() {
-	printf("unset env %s \n", unsetenvName);
-	unsetenv(unsetenvName);
+	int success = unsetenv(unsetenvName);
+	if (success != 0) printf("Error: Could not remove %s. \n", unsetenvName);
 }
 
 void xcd() {
-	if (cdPAth == NULL) {
+	if (cdPath == NULL) {
 		char* home = getenv("HOME");
 		chdir(home);
 	}
 	else {
 		if (chdir(cdPath) == -1) {
-			printf("Error: [%s] is not a valid directory. \n", cdPath);
+			printf("Error: %s is not a valid directory. \n", cdPath);
 		}
 	}
 }
 
 void xalias() {
 	if (aliasName == NULL && aliasValue == NULL) {
-		printf("alias dump");
+		printf("alias dump \n");
 	}
 	else {
 		printf("alias %s to %s \n", aliasName, aliasValue);
@@ -68,7 +68,8 @@ void xls() {
 }
 
 void xpwd() {
-	printf("pwd \n");
+	char* pwd = get_current_dir_name();
+	printf("%s \n", pwd);
 }
 
 void xdebug() {
@@ -99,17 +100,10 @@ void shell_init() {
 	// get environment variables (use getenv())
 	PATH = getenv("PATH");
 	HOME = getenv("HOME");
-	PWD = getenv("PWD");
     
 	// disable anything that can kill your shell. 
 	// (the shell should never die; only can be exit)
 	// do anything you feel should be done as init
-}
-
-void printPrompt() {
-	char pwd[MAX_LENGTH];
-	getcwd(pwd, MAX_LENGTH);
-	printf(KMAG "[%s] " RESET, getenv("PWD"));
 }
 
 int recover_from_errors() {
@@ -117,48 +111,49 @@ int recover_from_errors() {
 	// That is, the command still has a “tail”
 	// In this case you have to recover by “eating”
 	// the rest of the command.
-	// To do this: use yylex() directly. 
+	// To do this: use yylex() directly.
+	printf("An error has occured. Recoving...\n");
 }
 
 int getCommand() {
-	// http://www.epaperpress.com/lexandyacc/index.html
 	//init_scanner_and_parser();
-	if (yyparse()) recover_from_errors(); //understand_errors();
+	if (yyparse()) {
+		//understand_errors();
+		CMD = SYSERR;
+		return;
+	}
 	else return OK;
-}
-
-void processCommand() {
-	// run built-in commands – no fork
-	// no exec; only your code + Unix
-	// system calls. 
-	if (builtin != 0) do_it();
-	// execute general commands
-	// using fork and exec
-	else execute_it();
 }
 
 int do_it() {
 	switch (builtin) {
 		case SETENV:
 			xsetenv();
+			break;
 		case PRINTENV:
 			xprintenv();
+			break;
 		case UNSETENV:
 			xunsetenv();
+			break;
 		case CD: 
 			xcd();
+			break;
 		case ALIAS:
 			xalias();
+			break;
 		case UNALIAS:
 			xunalias();
+			break;
 		case LS:
 			xls();
+			break;
 		case PWD:
 			xpwd();
+			break;
 		case DEBUG:
 			xdebug();
-		case BYE:
-			xbye();
+			break;
 	}
 }
 
@@ -193,13 +188,24 @@ int main(int argc, char *argv[]) {
 	printf(KGRN "Launching [shellX] \n" RESET);
 
 	while(1) {
-		printPrompt();
-		switch(CMD = getCommand()) {
+		// print current directory
+		char* pwd = get_current_dir_name();
+		printf(KMAG "[%s] " RESET, pwd);
+
+		// process yacc
+		getCommand();
+
+		switch(CMD) {
 			case BYE:
-				printf(KGRN "Exiting [shellX] \n" RESET);	
-				exit(0);
-			case ERRORS:	recover_from_errors();
-			case OK:	processCommand();
+				xbye();
+				break;
+			case SYSERR:
+				recover_from_errors();
+				break;
+			case OK:
+				if (builtin != 0) do_it();
+				else execute_it();
+				break;
 		}
 	}
 }
