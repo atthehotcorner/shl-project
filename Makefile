@@ -9,4 +9,4 @@ bison-config:
 	bison -dyv lexyacc/shell.y
 
 build:
-	$(CC) lex.yy.c y.tab.c shell.c -o shell
+	$(CC) lex.yy.c y.tab.c linkedlist/ll.c shell.c -g -o shell

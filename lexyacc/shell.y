@@ -1,7 +1,4 @@
 %{
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
 #include "shell.h"
 
 void yyerror(const char *str) {
@@ -16,7 +13,7 @@ int yywrap() {
 	int intvar;
 	char *strval;
 }
-%token xSETENV xPRINTENV xUNSETENV xCD xALIAS xUNALIAS xLS xPWD xDEBUG xBYE NUMBER
+%token xSETENV xPRINTENV xUNSETENV xCD xALIAS xUNALIAS xLS xPWD xDEBUG xBYE
 %token <strval> VAR
 %%
 

@@ -1,16 +1,20 @@
+#ifndef SHELL
+#define SHELL
+
 // General
-#define OK 		0
+#define OK 			0
 #define SYSERR 		1
+#define IGNORE 		2
 #define MAX_LENGTH	1024
 
 // For do_it switch
 #define SETENV		1
 #define PRINTENV	2
 #define UNSETENV	3
-#define CD 		4
+#define CD 			4
 #define ALIAS 		5
 #define UNALIAS 	6
-#define LS		7
+#define LS			7
 #define PWD 		8
 #define DEBUG		9
 #define BYE 		10
@@ -25,6 +29,14 @@
 #define KCYN  "\x1B[36m"
 #define KWHT  "\x1B[37m"
 #define RESET "\033[0m"
+
+// Libaries and exterals
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <dirent.h>
+#include <signal.h>
+#include "linkedlist/ll.h"
 
 /*
   printf(KRED "red\n" RESET);
@@ -42,6 +54,7 @@ extern char** environ;
 extern char* get_current_dir_name();
 int builtin;
 int CMD;
+ll* aliasTable;
 
 char* PATH;
 char* HOME;
@@ -56,4 +69,5 @@ char* aliasName;
 char* aliasValue;
 char* unaliasName;
 
+#endif
 

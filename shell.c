@@ -1,8 +1,4 @@
 // Shell Project
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <dirent.h>
 #include "shell.h"
 
 //
@@ -39,15 +35,17 @@ void xcd() {
 
 void xalias() {
 	if (aliasName == NULL && aliasValue == NULL) {
-		printf("alias dump \n");
+		llPrint(aliasTable);
 	}
 	else {
 		printf("alias %s to %s \n", aliasName, aliasValue);
+		llPush(aliasTable, aliasName, aliasValue);
 	}
 }
 
 void xunalias() {
 	printf("unalias %s \n", unaliasName);
+	llRemove(aliasTable, unaliasName);
 }
 
 void xls() {
@@ -83,6 +81,7 @@ void xdebug() {
 
 void xbye() {
 	printf(KGRN "Exiting [shellX] \n" RESET);
+	llFree(aliasTable);
 	exit(0);
 }
 
@@ -90,20 +89,65 @@ void xbye() {
 // shellX code
 //
 void shell_init() {
-	// init all variables.
-	builtin = 0;
-        
-	// define (allocate storage) for some var/tables
+	// init alias table
+	aliasTable = llCreate();
 
-	// init all tables (e.g., alias table)
+	/*llPush(aliasTable, "test", "testvalue");
+	llPush(aliasTable, "test2", "test2value");
+	llPush(aliasTable, "test3", "test3value");
+	llPush(aliasTable, "test4", "test4value");
+	llPush(aliasTable, "test5", "test5value");
+
+	llPrint(aliasTable);
+
+	printf("fetch test3 \n");
+	printf("%s \n", llGet(aliasTable, "test3"));
+
+	llPrint(aliasTable);
+
+	printf("remove from start \n");
+	llRemove(aliasTable, "test");
+	llPrint(aliasTable);
+
+	printf("remove from end \n");
+	llRemove(aliasTable, "test5");
+	llPrint(aliasTable);
+	
+	printf("remove from middle \n");
+	llRemove(aliasTable, "test3");
+	llPrint(aliasTable);
+
+	printf("fetch test4 \n");
+	printf("%s \n", llGet(aliasTable, "test4"));
+
+	printf("remove from start \n");
+	llRemove(aliasTable, "test2");
+	llPrint(aliasTable);
+
+	printf("remove only child \n");
+	llRemove(aliasTable, "test4");
+
+    printf("print the empty table \n");
+	llPrint(aliasTable);
+
+	llPush(aliasTable, "test", "testvalue");
+	llPush(aliasTable, "test2", "test2value");
+	llPush(aliasTable, "test3", "test3value");
+	llPush(aliasTable, "test4", "test4value");
+	llPush(aliasTable, "test5", "test5value");
+
+	printf("print table \n");
+	llPrint(aliasTable);*/
 
 	// get environment variables (use getenv())
 	PATH = getenv("PATH");
 	HOME = getenv("HOME");
     
 	// disable anything that can kill your shell. 
-	// (the shell should never die; only can be exit)
-	// do anything you feel should be done as init
+	signal(SIGINT, SIG_IGN);  // Ctrl-C
+    signal(SIGQUIT, SIG_IGN); // Ctrl-backslash
+    signal(SIGTSTP, SIG_IGN); // Ctrl-Z
+    // cannot disable 'kill'
 }
 
 int recover_from_errors() {
@@ -112,7 +156,13 @@ int recover_from_errors() {
 	// In this case you have to recover by “eating”
 	// the rest of the command.
 	// To do this: use yylex() directly.
-	printf("An error has occured. Recoving...\n");
+	printf("An exception has occured. \nRecovering... ");
+	
+	while (yylex() != 0) {
+	    printf("... ");
+	}
+	
+	printf("\n");
 }
 
 int getCommand() {
@@ -187,15 +237,15 @@ int main(int argc, char *argv[]) {
 	shell_init();
 	printf(KGRN "Launching [shellX] \n" RESET);
 
-	while(1) {
+	while (1) {
 		// print current directory
 		char* pwd = get_current_dir_name();
-		printf(KMAG "[%s] " RESET, pwd);
+		printf(KMAG "%s> " RESET, pwd);
 
 		// process yacc
 		getCommand();
 
-		switch(CMD) {
+		switch (CMD) {
 			case BYE:
 				xbye();
 				break;
