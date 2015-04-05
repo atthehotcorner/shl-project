@@ -65,6 +65,16 @@ void llPush(ll* list, char* name, char* value) {
 }
 
 char* llGet(ll* list, char* name) {
+	char* value = llGetRecursive(list, name, name);
+
+	if (strcmp(name, value) == 0) {
+		// alias not found or is circular
+		return NULL;
+	}
+	else return value;
+}
+
+char* llGetRecursive(ll* list, char* name, char* originName) {
 	// current node
 	node* current = list->start;
 
@@ -82,13 +92,17 @@ char* llGet(ll* list, char* name) {
 		current = current->next;
 	}
 
-	/* look for alias in alias, return NULL if infinite
-	if (nodeFound == 1) {
-		// code here plz
-	}*/
-
-	if (nodeFound == 1) return value;
-	else return NULL;
+	if (nodeFound == 0) {
+		// name is not an alias
+		return name;
+	}
+	else if (strcmp(value, originName) == 0) {
+		// found alias is circular	
+		return originName;
+	}
+	else {
+		return llGetRecursive(list, value, originName);
+	}
 }
 
 void llRemove(ll* list, char* name) {

@@ -14,6 +14,7 @@ int yywrap() {
 	char *strval;
 }
 %token xSETENV xPRINTENV xUNSETENV xCD xALIAS xUNALIAS xLS xPWD xDEBUG xBYE
+%token LT GT AMP DQUOTE DRSIGN OPNBRACE CLSBRACE BACKSLASH PIPE TILDE
 %token <strval> VAR
 %%
 
@@ -22,7 +23,25 @@ commands:
 	| commands command;
 
 command:
-	setenv_case|printenv_case|unsetenv_case|cd_case|alias_case|unalias_case|ls_case|pwd_case|debug_case|bye_case;
+	getenv_case
+	| setenv_case
+	| printenv_case
+	| unsetenv_case
+	| cd_case
+	| alias_case
+	| unalias_case
+	| ls_case
+	| pwd_case
+	| debug_case
+	| bye_case;
+
+getenv_case:
+	DRSIGN OPNBRACE VAR CLSBRACE {
+		printf("looking up [%s] \n", $3);
+		char* value = getenv($3);
+		if (value == NULL) yyerror("variable is not defined");
+		else printf("%s \n", value);
+	};
 
 setenv_case:
 	xSETENV VAR VAR {
@@ -62,6 +81,12 @@ alias_case:
 		CMD = OK;
 		builtin = ALIAS;
 		aliasName = NULL;
+		aliasValue = NULL;
+	}
+	| xALIAS VAR {
+		CMD = OK;
+		builtin = ALIAS;
+		aliasName = $2;
 		aliasValue = NULL;
 	}
 	| xALIAS VAR VAR {

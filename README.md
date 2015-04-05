@@ -33,6 +33,13 @@ Status: Complete
 
 The alias command with no arguments lists all of the current aliases.
 
+**alias name**
+
+Status: Complete
+
+The alias command with name returns the value of name.
+
+
 **alias name word**
 
 Status: Partial *nesting not implemented, shorthand not implemented*

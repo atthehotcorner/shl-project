@@ -6,7 +6,7 @@
 //
 void xsetenv() {
 	int success = setenv(setenvName, setenvValue, 1);
-	if (success != 0) printf("Error: Could not set %s as %s. \n", setenvName, setenvValue);
+	if (success != 0) printf(KRED "Error, could not set %s as %s. \n" RESET, setenvName, setenvValue);
 }
 
 void xprintenv() {
@@ -18,7 +18,7 @@ void xprintenv() {
 
 void xunsetenv() {
 	int success = unsetenv(unsetenvName);
-	if (success != 0) printf("Error: Could not remove %s. \n", unsetenvName);
+	if (success != 0) printf(KRED "Error, could not remove %s. \n" RESET, unsetenvName);
 }
 
 void xcd() {
@@ -28,7 +28,7 @@ void xcd() {
 	}
 	else {
 		if (chdir(cdPath) == -1) {
-			printf("Error: %s is not a valid directory. \n", cdPath);
+			printf(KRED "Error, %s is not a valid directory. \n" RESET, cdPath);
 		}
 	}
 }
@@ -36,6 +36,11 @@ void xcd() {
 void xalias() {
 	if (aliasName == NULL && aliasValue == NULL) {
 		llPrint(aliasTable);
+	}
+	else if (aliasValue == NULL) {
+	    char* temp = llGet(aliasTable, aliasName);
+	    if (temp == NULL) printf(KRED "Error, %s not found or is circular \n" RESET, aliasName);
+        else printf("%s \n", temp);
 	}
 	else {
 		printf("alias %s to %s \n", aliasName, aliasValue);
@@ -61,7 +66,7 @@ void xls() {
 		closedir(directory);
 	}
 	else {
-		printf("Error: Could not get list of files. \n");
+		printf(KRED "Error, Could not get list of files. \n" RESET);
 	}
 }
 
@@ -92,62 +97,19 @@ void shell_init() {
 	// init alias table
 	aliasTable = llCreate();
 
-	/*llPush(aliasTable, "test", "testvalue");
-	llPush(aliasTable, "test2", "test2value");
-	llPush(aliasTable, "test3", "test3value");
-	llPush(aliasTable, "test4", "test4value");
-	llPush(aliasTable, "test5", "test5value");
-
-	llPrint(aliasTable);
-
-	printf("fetch test3 \n");
-	printf("%s \n", llGet(aliasTable, "test3"));
-
-	llPrint(aliasTable);
-
-	printf("remove from start \n");
-	llRemove(aliasTable, "test");
-	llPrint(aliasTable);
-
-	printf("remove from end \n");
-	llRemove(aliasTable, "test5");
-	llPrint(aliasTable);
-	
-	printf("remove from middle \n");
-	llRemove(aliasTable, "test3");
-	llPrint(aliasTable);
-
-	printf("fetch test4 \n");
-	printf("%s \n", llGet(aliasTable, "test4"));
-
-	printf("remove from start \n");
-	llRemove(aliasTable, "test2");
-	llPrint(aliasTable);
-
-	printf("remove only child \n");
-	llRemove(aliasTable, "test4");
-
-    printf("print the empty table \n");
-	llPrint(aliasTable);
-
-	llPush(aliasTable, "test", "testvalue");
-	llPush(aliasTable, "test2", "test2value");
-	llPush(aliasTable, "test3", "test3value");
-	llPush(aliasTable, "test4", "test4value");
-	llPush(aliasTable, "test5", "test5value");
-
-	printf("print table \n");
-	llPrint(aliasTable);*/
+    llPush(aliasTable, "a", "c");
+	llPush(aliasTable, "b", "d");
+	llPush(aliasTable, "c", "a");
+	llPush(aliasTable, "d", "dfinal");
 
 	// get environment variables (use getenv())
 	PATH = getenv("PATH");
 	HOME = getenv("HOME");
     
 	// disable anything that can kill your shell. 
-	signal(SIGINT, SIG_IGN);  // Ctrl-C
+	/*signal(SIGINT, SIG_IGN);  // Ctrl-C
     signal(SIGQUIT, SIG_IGN); // Ctrl-backslash
-    signal(SIGTSTP, SIG_IGN); // Ctrl-Z
-    // cannot disable 'kill'
+    signal(SIGTSTP, SIG_IGN); // Ctrl-Z*/
 }
 
 int recover_from_errors() {
@@ -156,13 +118,13 @@ int recover_from_errors() {
 	// In this case you have to recover by “eating”
 	// the rest of the command.
 	// To do this: use yylex() directly.
-	printf("An exception has occured. \nRecovering... ");
+	printf(KRED "An exception has occured. \nRecovering [%s]... ", yytext);
 	
 	while (yylex() != 0) {
-	    printf("... ");
+	    printf("[%s]... ", yytext);
 	}
 	
-	printf("\n");
+	printf("\n" RESET);
 }
 
 int getCommand() {
@@ -208,7 +170,7 @@ int do_it() {
 }
 
 int execute_it() {
-	// Handle  command execution, pipelining, i/o redirection, and background processing. 
+	// Handle command execution, pipelining, i/o redirection, and background processing. 
 	// Utilize a command table whose components are plugged in during parsing by yacc. 
 
 	// Check Command Accessability and Executability

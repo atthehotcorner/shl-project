@@ -52,6 +52,7 @@
 // Globals
 extern char** environ;
 extern char* get_current_dir_name();
+extern char* yytext;
 int builtin;
 int CMD;
 ll* aliasTable;

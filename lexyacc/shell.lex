@@ -2,20 +2,35 @@
 #include <stdio.h>
 #include "y.tab.h"
 %}	
+VAR [0-9a-zA-Z/:.~\-?*]
 %%
-setenv					return xSETENV;
-printenv				return xPRINTENV;
-unsetenv				return xUNSETENV;
-cd 						return xCD;
-alias					return xALIAS;
-unalias					return xUNALIAS;
-ls						return xLS;
-pwd						return xPWD;
-debug					return xDEBUG;
-bye						return xBYE;
-[0-9a-zA-Z/:.~\-?*]+	{yylval.strval = strdup(yytext); return VAR;}
-\n						{return 0;} /* enter keypress */
-<<EOF>>					{return 0;}
-[ \t\r]+				{;} /* whitespace */
-.            	  		{;} /* catchall */
+
+setenv				return xSETENV;
+printenv			return xPRINTENV;
+unsetenv			return xUNSETENV;
+cd 					return xCD;
+alias				return xALIAS;
+unalias				return xUNALIAS;
+ls					return xLS;
+pwd					return xPWD;
+debug				return xDEBUG;
+bye					return xBYE;
+{VAR}+ 				{yylval.strval = strdup(yytext); return VAR;}
+
+[<]                 return LT;
+[>]                 return GT;
+[&]                 return AMP;
+[\"]				return DQUOTE;
+[$]					return DRSIGN;
+[{]					return OPNBRACE;
+[}]					return CLSBRACE;
+[\\]                return BACKSLASH;
+[|]					return PIPE;
+[~]					return TILDE;
+\;					return 0;
+\n					return 0; /* enter keypress */
+<<EOF>>				return 0;
+[ \t\r]+			{;} /* whitespace */
+.            	  	{;} /* catchall */
 %%
+
