@@ -1,12 +1,14 @@
-CC=gcc
+CC = gcc
+LEX = flex
+YACC = bison
 
-all: flex-config bison-config build
+all: lex-config yacc-config build
 
-flex-config:
-	flex lexyacc/shell.lex
+lex-config:
+	 $(LEX) lexyacc/shell.lex
 
-bison-config:
-	bison -dyv lexyacc/shell.y
+yacc-config:
+	 $(YACC) -dyv lexyacc/shell.y
 
 build:
 	$(CC) lex.yy.c y.tab.c linkedlist/ll.c shell.c -g -o shell

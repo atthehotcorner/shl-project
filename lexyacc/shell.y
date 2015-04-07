@@ -1,8 +1,8 @@
 %{
 #include "shell.h"
 
-void yyerror(const char *str) {
-	fprintf(stderr, "Error: %s \n", str);
+void yyerror(const char* str) {
+	fprintf(stderr, KRED "Error, %s \n" RESET, str);
 }
 
 int yywrap() {
@@ -11,31 +11,39 @@ int yywrap() {
 %}
 %union {
 	int intvar;
-	char *strval;
+	char* strval;
+	void* linkedlist;
 }
-%token xSETENV xPRINTENV xUNSETENV xCD xALIAS xUNALIAS xLS xPWD xDEBUG xBYE
+%token xSETENV xPRINTENV xUNSETENV xCD xALIAS xUNALIAS xDEBUG xBYE END
 %token LT GT AMP DQUOTE DRSIGN OPNBRACE CLSBRACE BACKSLASH PIPE TILDE
 %token <strval> VAR
+%type <linkedlist> ARGS
+%type <strval> ARG
 %%
 
 commands: 
 	/* blank */
-	| commands command;
+	| commands command {
+		// print current directory
+		char* pwd = get_current_dir_name();
+		printf(KMAG "%s> " RESET, pwd);
+	};
 
 command:
-	getenv_case
-	| setenv_case
-	| printenv_case
-	| unsetenv_case
-	| cd_case
-	| alias_case
-	| unalias_case
-	| ls_case
-	| pwd_case
-	| debug_case
-	| bye_case;
+	END {} 
+	| getenv END
+	| setenv END
+	| printenv END
+	| unsetenv END
+	| cd END
+	| alias END
+	| unalias END
+	| debug END
+	| bye END
+	| cmd END;
 
-getenv_case:
+// builtins
+getenv:
 	DRSIGN OPNBRACE VAR CLSBRACE {
 		printf("looking up [%s] \n", $3);
 		char* value = getenv($3);
@@ -43,95 +51,77 @@ getenv_case:
 		else printf("%s \n", value);
 	};
 
-setenv_case:
+setenv:
 	xSETENV VAR VAR {
-		CMD = OK;
-		builtin = SETENV;
-		setenvName = $2;
-		setenvValue = $3;
+		xsetenv($2, $3);
 	};
 
-printenv_case:
+printenv:
 	xPRINTENV {
-		CMD = OK;
-		builtin = PRINTENV;
+		xprintenv();
 	};
 
-unsetenv_case:
+unsetenv:
 	xUNSETENV VAR {
-		CMD = OK;
-		builtin = UNSETENV;
-		unsetenvName = $2;
+		xunsetenv($2);
 	};
 
-cd_case:
+cd:
 	xCD {
-		CMD = OK;
-		builtin = CD;
-		cdPath = NULL;
+		xcd(NULL);
 	}
 	| xCD VAR {
-		CMD = OK;
-		builtin = CD;
-		cdPath = $2;
+		xcd($2);
 	};
 
-alias_case:
+alias:
 	xALIAS {
-		CMD = OK;
-		builtin = ALIAS;
-		aliasName = NULL;
-		aliasValue = NULL;
+		xprintalias();
 	}
 	| xALIAS VAR {
-		CMD = OK;
-		builtin = ALIAS;
-		aliasName = $2;
-		aliasValue = NULL;
+		xgetalias($2);
 	}
 	| xALIAS VAR VAR {
-		CMD = OK;
-		builtin = ALIAS;
-		aliasName = $2;
-		aliasValue = $3;
+		xsetalias($2, $3);
 	};
 
-unalias_case:
+unalias:
 	xUNALIAS VAR {
-		CMD = OK;
-		builtin = UNALIAS;
-		unaliasName = $2;
+		xunalias($2);
 	};
 
-ls_case: 
-	xLS {
-		CMD = OK;
-		builtin = LS;
-	};
-
-pwd_case:
-	xPWD {
-		CMD = OK;
-		builtin = PWD;
-	};
-
-debug_case: 
+debug: 
 	xDEBUG {
-		CMD = OK;
-		builtin = DEBUG;
+		xdebug();
 	};
 
-bye_case:
+bye:
 	xBYE {
-		CMD = BYE;
+		xbye();
 	};
 
-/*variable_case:
-	VAR {	
-		printf("Command not recognized.\n");
-		//const char *alias = $1;
-//		char *value = value_from_list(linklist, alias);
-//		printf("%s\n", value);
-	};*/
+// No match, could be exc command with argms	
+cmd:
+	ARGS {
+		xexecute($1);
+	};
+
+ARGS:
+	ARG {
+		// First word, check for alias here?
+		ll* list = llCreate(1);
+		llPush(list, $1, NULL);
+		$$ = list;
+	}
+	| ARGS ARG {
+		llPush($1, $2, NULL);
+		$$ = $1;
+	}
+	
+ARG:
+	VAR {
+		$$ = $1;
+	};
+
 %%
 

@@ -2,22 +2,11 @@
 #define SHELL
 
 // General
+#define true 		1
+#define false 		0
+
 #define OK 			0
 #define SYSERR 		1
-#define IGNORE 		2
-#define MAX_LENGTH	1024
-
-// For do_it switch
-#define SETENV		1
-#define PRINTENV	2
-#define UNSETENV	3
-#define CD 			4
-#define ALIAS 		5
-#define UNALIAS 	6
-#define LS			7
-#define PWD 		8
-#define DEBUG		9
-#define BYE 		10
 
 // Colors
 #define KNRM  "\x1B[0m"
@@ -36,6 +25,7 @@
 #include <string.h>
 #include <dirent.h>
 #include <signal.h>
+#include <unistd.h>
 #include "linkedlist/ll.h"
 
 /*
@@ -49,26 +39,29 @@
   printf(KNRM "normal\n" RESET);
 */
 
+void xsetenv(char* name, char* value);
+void xprintenv();
+void xunsetenv(char* name);
+
+void xcd(char* path);
+
+char* xgetalias(char* name);
+void xsetalias(char* name, char* value);
+void xprintalias();
+void xunalias(char* name);
+
+void xdebug();
+void xbye();
+
+void xexecute(ll* list);
+char* xpathlookup(char* command);
+void xexecutecommand(ll* list);
+
 // Globals
 extern char** environ;
 extern char* get_current_dir_name();
 extern char* yytext;
-int builtin;
-int CMD;
 ll* aliasTable;
-
-char* PATH;
-char* HOME;
-
-char* setenvName;
-char* setenvValue;
-char* unsetenvName;
-
-char* cdPath;
-
-char* aliasName;
-char* aliasValue;
-char* unaliasName;
 
 #endif
 
