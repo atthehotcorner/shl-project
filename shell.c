@@ -181,8 +181,9 @@ void xexecutecommand(ll* list) {
 // shellX code
 //
 void shell_init() {
-	// init alias table
+	// init tables and linked lists
 	aliasTable = llCreate(0);
+	chain = NULL;
 
     llPush(aliasTable, "a", "c");
 	llPush(aliasTable, "b", "d");
@@ -223,8 +224,11 @@ int main(int argc, char *argv[]) {
 		printf(KMAG "%s> " RESET, pwd);
 	
 		// start processing
-		//yyparse();
 		if (yyparse() == 1) recover_from_errors();
+		
+		llPrint(chain);
+		llFree(chain);
+		chain = NULL;
 	}
 }
 

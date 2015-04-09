@@ -1,6 +1,8 @@
 # sh-llX Project
 Class project, details to come after due date.
 
+v2 is replacing parser with linked lists returns
+
 ### Built-in Commands
 **setenv variable word**
 

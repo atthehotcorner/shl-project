@@ -3,6 +3,9 @@
 
 void yyerror(const char* str) {
 	fprintf(stderr, KRED "Error, %s \n" RESET, str);
+	// unusable command chain
+	llFree(chain);
+	chain = NULL;
 }
 
 int yywrap() {
@@ -17,40 +20,20 @@ extern int yylineno;
 	char* strval;
 	void* linkedlist;
 }
-%token xSETENV xPRINTENV xUNSETENV xCD xALIAS xUNALIAS xDEBUG xBYE xEXIT NEWLINE
+%token NEWLINE
 %token <strval> VAR
 %type <strval> variable
-%type <linkedlist> ARGS
-%type <strval> ARG
+%type <linkedlist> arguments
+%type <strval> argument
 %%
 
 commands: 
 	/* blank */
-	| commands command {
-		// print current directory
-		char* pwd = get_current_dir_name();
-		printf(KBLU "%s> " RESET, pwd);
-	};
+	| commands command;
 
 command:
-	variable
-	| setenv end
-	| printenv end
-	| unsetenv end
-	| cd end
-	| alias end
-	| unalias end
-	| debug end
-	| bye end
-	| exit end
-	| cmd end;
+	xcommand;
 
-end:
-	NEWLINE {
-		YYACCEPT;
-	};
-
-// builtins
 variable:
 	'$' '{' VAR '}' {
 		char* value = getenv($3);
@@ -66,85 +49,27 @@ variable:
 		$$ = $1;
 	};
 
-setenv:
-	xSETENV variable variable {
-		xsetenv($2, $3);
+xcommand:
+	arguments {
+		chain = $1;
+		YYACCEPT;
 	};
 
-printenv:
-	xPRINTENV {
-		xprintenv();
-	};
-
-unsetenv:
-	xUNSETENV variable {
-		xunsetenv($2);
-	};
-
-cd:
-	xCD {
-		xcd(NULL);
-	}
-	| xCD variable {
-		xcd($2);
-	};
-
-alias:
-	xALIAS {
-		xprintalias();
-	}
-	| xALIAS variable {
-		xgetalias($2);
-	}
-	| xALIAS variable variable {
-		xsetalias($2, $3);
-	};
-
-unalias:
-	xUNALIAS VAR {
-		xunalias($2);
-	};
-
-debug: 
-	xDEBUG {
-		xdebug();
-	};
-
-bye:
-	xBYE {
-		xbye();
-	};
-
-exit:
-	xEXIT {
-		printf("Did you mean " KGRN "bye" RESET "? \n");
-	};
-
-// No match, could be exc command with argms	
-cmd:
-	ARGS {
-		xexecute($1);
-	};
-
-ARGS:
-	ARG {
-		// First word, check for alias here?
+arguments:
+	argument {
+		// First word
 		ll* list = llCreate(1);
 		llPush(list, $1, NULL);
 		$$ = list;
 	}
-	| ARGS ARG {
+	| arguments argument {
 		llPush($1, $2, NULL);
 		$$ = $1;
 	};
 	
-ARG:
+argument:
 	variable {
 		$$ = $1;
 	}
-	| '&' {
-		printf("and\n");
-		$$ = (char*) '&';
-	};
 %%
 

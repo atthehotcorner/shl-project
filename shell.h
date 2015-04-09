@@ -64,7 +64,9 @@ extern FILE* yyin;
 extern FILE* yyout;
 extern char* yytext;
 extern int yylineno;
+
 ll* aliasTable;
+ll* chain; // stores parsed tokens
 
 #endif
 

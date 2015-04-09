@@ -13,6 +13,8 @@ ll* llCreate(int x) {
 }
 
 void llFree(ll* list) {
+	if (list == NULL) return;
+
 	node* current = list->start;
 	node* prev = NULL;
 
@@ -27,6 +29,8 @@ void llFree(ll* list) {
 }
 
 void llPush(ll* list, char* name, char* value) {
+	if (list == NULL) return;
+
 	// create new node
 	node *new = malloc(sizeof(node));
 	new->name = name;
@@ -49,6 +53,8 @@ void llPush(ll* list, char* name, char* value) {
 
 // for alias, dup checking
 void llPushAlias(ll* list, char* name, char* value) {
+	if (list == NULL) return;
+
 	// current node
 	node* current = malloc(sizeof(node));
 	current = list->start;
@@ -92,6 +98,8 @@ void llPushAlias(ll* list, char* name, char* value) {
 
 // get first found
 char* llGet(ll* list, char* name) {
+	if (list == NULL) return;
+
 	// current node
 	node* current = list->start;
 
@@ -115,6 +123,8 @@ char* llGet(ll* list, char* name) {
 
 // for alias fetching
 char* llGetAlias(ll* list, char* name) {
+	if (list == NULL) return;
+
 	char* value = llGetAliasRecursive(list, name, name);
 
 	if (strcmp(name, value) == 0) {
@@ -182,6 +192,8 @@ node* llPop(ll* list) {
 }*/
 
 void llRemove(ll* list, char* name) {
+	if (list == NULL) return;
+
 	// current and prev node
 	node* current = list->start;
 	node* prev = NULL;
@@ -222,6 +234,12 @@ void llRemove(ll* list, char* name) {
 }
 
 void llPrint(ll* list) {
+	if (list == NULL || list->count == 0) {
+		printf("No items found. \n");
+		return;
+	}
+	printf("Number of items: %d \n", list->count);
+
 	// current node
 	node* current = list->start;
 
@@ -234,7 +252,5 @@ void llPrint(ll* list) {
 		else printf("%s=%s \n", current->name, current->value);
 		current = current->next;
 	}
-
-	if (index == 0) printf("No items found. \n");
 }
 
