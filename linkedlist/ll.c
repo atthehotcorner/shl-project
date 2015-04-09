@@ -6,6 +6,7 @@
 ll* llCreate(int x) {
 	ll* list = malloc(sizeof(ll));
 	list->type = x;
+	list->count = 0;
 	list->start = NULL;
 	list->end = NULL;
 	return list;
@@ -42,6 +43,8 @@ void llPush(ll* list, char* name, char* value) {
 		list->end->next = new;
 		list->end = new;
 	}
+
+	list->count++;
 }
 
 // for alias, dup checking
@@ -80,6 +83,8 @@ void llPushAlias(ll* list, char* name, char* value) {
 			list->end->next = new;
 			list->end = new;
 		}
+		
+		list->count++;
 	}
 
 	free(current);
@@ -204,6 +209,8 @@ void llRemove(ll* list, char* name) {
 				// current is in middle of list
 				prev->next = current->next;
 			}
+			
+			list->count--;
 
 			free(current);
 			break;
@@ -220,6 +227,7 @@ void llPrint(ll* list) {
 
 	// print nodes
 	int index = 0;
+	
 	while (current != NULL) {
 		index++;
 		if (list->type == 1) printf("%s \n", current->name);

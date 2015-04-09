@@ -5,10 +5,10 @@ YACC = bison
 all: lex-config yacc-config build
 
 lex-config:
-	 $(LEX) lexyacc/shell.lex
+	 $(LEX) parser/lex.l
 
 yacc-config:
-	 $(YACC) -dyv lexyacc/shell.y
+	 $(YACC) -dyv parser/yacc.y
 
 build:
-	$(CC) lex.yy.c y.tab.c linkedlist/ll.c shell.c -g -o shell
+	$(CC) lex.yy.c y.tab.c linkedlist/ll.c shell.c -g -o xshell

@@ -8,15 +8,18 @@ void yyerror(const char* str) {
 int yywrap() {
 	return 1;
 }
+
+extern int yylineno;
 %}
+%error-verbose
 %union {
 	int intvar;
 	char* strval;
 	void* linkedlist;
 }
-%token xSETENV xPRINTENV xUNSETENV xCD xALIAS xUNALIAS xDEBUG xBYE END
-%token LT GT AMP DQUOTE DRSIGN OPNBRACE CLSBRACE BACKSLASH PIPE TILDE
+%token xSETENV xPRINTENV xUNSETENV xCD xALIAS xUNALIAS xDEBUG xBYE xEXIT NEWLINE
 %token <strval> VAR
+%type <strval> variable
 %type <linkedlist> ARGS
 %type <strval> ARG
 %%
@@ -26,33 +29,45 @@ commands:
 	| commands command {
 		// print current directory
 		char* pwd = get_current_dir_name();
-		printf(KMAG "%s> " RESET, pwd);
+		printf(KBLU "%s> " RESET, pwd);
 	};
 
 command:
-	END {} 
-	| getenv END
-	| setenv END
-	| printenv END
-	| unsetenv END
-	| cd END
-	| alias END
-	| unalias END
-	| debug END
-	| bye END
-	| cmd END;
+	variable
+	| setenv end
+	| printenv end
+	| unsetenv end
+	| cd end
+	| alias end
+	| unalias end
+	| debug end
+	| bye end
+	| exit end
+	| cmd end;
+
+end:
+	NEWLINE {
+		YYACCEPT;
+	};
 
 // builtins
-getenv:
-	DRSIGN OPNBRACE VAR CLSBRACE {
-		printf("looking up [%s] \n", $3);
+variable:
+	'$' '{' VAR '}' {
 		char* value = getenv($3);
 		if (value == NULL) yyerror("variable is not defined");
-		else printf("%s \n", value);
+		else printf("Replacing %s with %s \n", $3, value);
+		$$ = value;
+	}
+	| '"' VAR '"' {
+		printf("Removing quotes\n");
+		$$ = $2;
+	}
+	| VAR {
+		$$ = $1;
 	};
 
 setenv:
-	xSETENV VAR VAR {
+	xSETENV variable variable {
 		xsetenv($2, $3);
 	};
 
@@ -62,7 +77,7 @@ printenv:
 	};
 
 unsetenv:
-	xUNSETENV VAR {
+	xUNSETENV variable {
 		xunsetenv($2);
 	};
 
@@ -70,7 +85,7 @@ cd:
 	xCD {
 		xcd(NULL);
 	}
-	| xCD VAR {
+	| xCD variable {
 		xcd($2);
 	};
 
@@ -78,10 +93,10 @@ alias:
 	xALIAS {
 		xprintalias();
 	}
-	| xALIAS VAR {
+	| xALIAS variable {
 		xgetalias($2);
 	}
-	| xALIAS VAR VAR {
+	| xALIAS variable variable {
 		xsetalias($2, $3);
 	};
 
@@ -100,6 +115,11 @@ bye:
 		xbye();
 	};
 
+exit:
+	xEXIT {
+		printf("Did you mean " KGRN "bye" RESET "? \n");
+	};
+
 // No match, could be exc command with argms	
 cmd:
 	ARGS {
@@ -116,12 +136,15 @@ ARGS:
 	| ARGS ARG {
 		llPush($1, $2, NULL);
 		$$ = $1;
-	}
+	};
 	
 ARG:
-	VAR {
+	variable {
 		$$ = $1;
+	}
+	| '&' {
+		printf("and\n");
+		$$ = (char*) '&';
 	};
-
 %%
 

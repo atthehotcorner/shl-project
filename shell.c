@@ -95,29 +95,23 @@ void xexecute(ll* list) {
 
 	//printf("Executing %s \n", list->start->name);
 
-	// check for alias here?
+	// check for alias here? (does not parse flags in alias)
 	char* alias = xgetalias(list->start->name);
 	if (alias != NULL) {
 		list->start->name = alias;
 	}
 
-	// Check Command Accessability and Executability
-	if (access(list->start->name, X_OK) == 0) {
-		// command works as given
+	// See if command exists
+	char* path = xpathlookup(list->start->name);
+
+	if (path != NULL) {
+		// matched command from path
+		list->start->name = path;
 	}
 	else {
-		// Search path for matching commands
-		char* path = xpathlookup(list->start->name);
-
-		if (path != NULL) {
-			// matched command from path
-			list->start->name = path;
-		}
-		else {
-			// invalid command, exit
-			printf(KRED "Error, could not find command %s. \n" RESET, list->start->name);
-			return;
-		}
+		// invalid command, exit
+		printf(KRED "Error, could not find command %s. \n" RESET, list->start->name);
+		return;
 	}
 
 	// Time to execute
@@ -129,12 +123,16 @@ void xexecute(ll* list) {
 		exit(0); // if command fails
 	}
 	else {
-		llFree(list);
+		llFree(list); // no longer needed
 		waitpid(pid, &status, 0);
 	}
 }
 
 char* xpathlookup(char* command) {
+	// command already absolute, works as given
+	if (access(command, X_OK) == 0) return command;
+
+	// look if command is in one of the paths
 	char* path = strdup(getenv("PATH"));
 	char* parsedPath = strtok(path, ":");
 
@@ -150,14 +148,34 @@ char* xpathlookup(char* command) {
 		}
 
 		// next token
-		free(result);
+		//printf("%s \n", result);
+		free(result); // bug when command is over 8 chars
+		result = NULL;
 		parsedPath = strtok(NULL, ":");
 	}
 
+	// not found
 	return NULL;
 }
 
+void xexecutecommand(ll* list) {
+	// http://geoffgarside.co.uk/2009/08/28/using-execve-for-the-first-time/
+	node* current = list->start;
 
+	// Parse list into argv
+	char** envp = {NULL};
+	char** argv = malloc(sizeof(char*) * (list->count + 1));
+	argv[list->count] = NULL; // NULL terminator
+	
+	int i;
+	// no while loop, we need an index for argv
+	for (i = 0; i < list->count; i++) {
+		argv[i] = current->name;
+		current = current->next;
+	}
+
+	execve(argv[0], argv, envp); // or execv
+}
 
 //
 // shellX code
@@ -184,12 +202,15 @@ void shell_init() {
 }
 
 int recover_from_errors() {
-	printf(KRED "An exception has occured. \nRecovering [%s]... ", yytext);
+	/*printf(KRED "An exception has occured. \nRecovering [%s]... ", yytext);
 
-	while (yylex() != 0) {
-	    printf("[%s]... ", yytext);
+	int x = yylex();
+	while (x != 0 && x != 59) {
+	    printf("[%s] %d ... ", yytext, x);
 	}
-	printf("\n" RESET);
+	printf("\n" RESET);*/
+	
+	printf(KRED "An exception has occured. \n");
 }
 
 int main(int argc, char *argv[]) {
@@ -200,10 +221,10 @@ int main(int argc, char *argv[]) {
 		// print current directory
 		char* pwd = get_current_dir_name();
 		printf(KMAG "%s> " RESET, pwd);
-
+	
 		// start processing
-		yyparse();
-		//if (yyparse()) recover_from_errors();
+		//yyparse();
+		if (yyparse() == 1) recover_from_errors();
 	}
 }
 

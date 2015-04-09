@@ -9,6 +9,7 @@ typedef struct ll {
 	// 0 - will use name and value
 	// 1 - will only use name
 	int type;
+	int count;
 	struct node* start;
 	struct node* end;
 } ll;

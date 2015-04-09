@@ -42,7 +42,7 @@ The alias command with name returns the value of name.
 
 **alias name word**
 
-Status: Partial *nesting not implemented, shorthand not implemented*
+Status: Partial *testing needed, might not work on built ins*
 
 This alias command adds a new alias to the shell. An alias is essentially a shorthand form of a long command. For example, you may have an alias *alias lf "/bin/ls -F"* set up so that whenever you type *lf* from the command line, the command that is executed is */bin/ls -F*. Note that alias expansion is only performed on the first word of a command. However, aliases may be nested and the shell detects when an infinite alias expansion occurs.
 

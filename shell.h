@@ -60,7 +60,10 @@ void xexecutecommand(ll* list);
 // Globals
 extern char** environ;
 extern char* get_current_dir_name();
+extern FILE* yyin;
+extern FILE* yyout;
 extern char* yytext;
+extern int yylineno;
 ll* aliasTable;
 
 #endif
