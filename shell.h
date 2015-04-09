@@ -50,7 +50,6 @@ void xsetalias(char* name, char* value);
 void xprintalias();
 void xunalias(char* name);
 
-void xdebug();
 void xbye();
 
 void xexecute(ll* list);

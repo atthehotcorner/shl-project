@@ -26,6 +26,7 @@ void llFree(ll* list) {
 	} 
 
 	free(list);
+	list = NULL;
 }
 
 void llPush(ll* list, char* name, char* value) {
@@ -98,7 +99,7 @@ void llPushAlias(ll* list, char* name, char* value) {
 
 // get first found
 char* llGet(ll* list, char* name) {
-	if (list == NULL) return;
+	if (list == NULL) return NULL;
 
 	// current node
 	node* current = list->start;
@@ -123,7 +124,7 @@ char* llGet(ll* list, char* name) {
 
 // for alias fetching
 char* llGetAlias(ll* list, char* name) {
-	if (list == NULL) return;
+	if (list == NULL) return NULL;
 
 	char* value = llGetAliasRecursive(list, name, name);
 
@@ -135,6 +136,8 @@ char* llGetAlias(ll* list, char* name) {
 }
 
 char* llGetAliasRecursive(ll* list, char* name, char* originName) {
+	if (list == NULL) return NULL;
+
 	// current node
 	node* current = list->start;
 
@@ -165,31 +168,29 @@ char* llGetAliasRecursive(ll* list, char* name, char* originName) {
 	}
 }
 
-/* Remove from front
-node* llPop(ll* list) {
-	// no items in list
-	if (list->start == NULL) return NULL
+// Remove from front
+char* llPop(ll* list) {
+	if (list == NULL || list->start == NULL) return NULL;
 
-	if (prev == NULL) {
-		// current is start of list
-		list->start = current->next;
+	// current and prev node
+	node* current = list->start;
+	node* next = list->start->next;
 
-		if (current->next == NULL) {
-			// current is an only child
-					list->start = NULL;
-					list->end = NULL;
-				}
-			}
-			else if (current->next == NULL) {
-				// current is end of list
-				prev->next = NULL;
-				list->end = prev;
-			}
-			else {
-				// current is in middle of list
-				prev->next = current->next;
-			}
-}*/
+	char* data = current->name;
+
+	if (next == NULL) {
+		// current is an only child
+		list->start = NULL;
+		list->end = NULL;
+	}
+	else {
+		list->start = next;
+	}
+
+	list->count--;
+	free(current);
+	return data;
+}
 
 void llRemove(ll* list, char* name) {
 	if (list == NULL) return;
@@ -234,7 +235,7 @@ void llRemove(ll* list, char* name) {
 }
 
 void llPrint(ll* list) {
-	if (list == NULL || list->count == 0) {
+	if (list == NULL || list->start == NULL) {
 		printf("No items found. \n");
 		return;
 	}

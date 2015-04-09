@@ -24,6 +24,7 @@ char* llGet(ll* list, char* name);
 char* llGetAlias(ll* list, char* name);
 char* llGetAliasRecursive(ll* list, char* name, char* originName);
 
+char* llPop(ll* list);
 void llRemove(ll* list, char* name);
 void llPrint(ll* list);
 

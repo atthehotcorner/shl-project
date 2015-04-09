@@ -37,8 +37,11 @@ command:
 variable:
 	'$' '{' VAR '}' {
 		char* value = getenv($3);
-		if (value == NULL) yyerror("variable is not defined");
-		else printf("Replacing %s with %s \n", $3, value);
+		if (value == NULL) {
+			yyerror("variable is not defined");
+			YYERROR;
+		}
+		printf("Replacing %s with %s \n", $3, value);
 		$$ = value;
 	}
 	| '"' VAR '"' {
@@ -47,6 +50,13 @@ variable:
 	}
 	| VAR {
 		$$ = $1;
+	}
+	| '~' VAR {
+		$$ = $2;
+		// look for users homepath here
+	}
+	| '~' {
+		$$ = getenv("HOME");
 	};
 
 xcommand:

@@ -56,16 +56,10 @@ void xunalias(char* name) {
 	llRemove(aliasTable, name);
 }
 
-void xdebug() {
-	printf("[Debugging info]\n");
-	printf("PATH: %s \n", getenv("PATH"));
-	printf("HOME: %s \n", getenv("HOME"));
-	printf("PWD: %s \n", get_current_dir_name());
-}
-
 void xbye() {
 	printf(KGRN "Exiting [shellX] \n" RESET);
 	llFree(aliasTable);
+	llFree(chain);
 	exit(0);
 }
 
@@ -180,6 +174,79 @@ void xexecutecommand(ll* list) {
 //
 // shellX code
 //
+void min() {
+	printf(KRED "Missing required arguments. \n" RESET);
+	return;
+}
+
+void ignore(int number) {
+	if (number < 2) printf(KYEL "Ignoring last %d additional argument. \n" RESET, number);
+	else printf(KYEL "Ignoring last %d additional arguments. \n" RESET, number);
+}
+
+void xshell() {
+	if (chain == NULL || chain->start == NULL) return;
+	char* command = chain->start->name;
+	int count = chain->count;
+
+	// check if built in or command
+	if (strcmp(command, "setenv") == 0) {
+		if (count < 3) {min(); return;}
+		else if (count > 3) ignore(count - 3);
+
+		llPop(chain); // ignore command name
+		xsetenv(llPop(chain), llPop(chain));
+	}
+	else if (strcmp(command, "printenv") == 0) {
+		if (count > 1) ignore(count - 1);
+		xprintenv();	
+	}
+	else if (strcmp(command, "unsetenv") == 0) {
+		if (count < 2) {min(); return;}
+		else if (count > 2) ignore(count - 2);
+
+		llPop(chain); // ignore command name
+		xunalias(llPop(chain));
+	}
+	else if (strcmp(command, "cd") == 0) {
+		if (count > 2) ignore(count - 2);
+		
+		llPop(chain); // ignore command name
+		xcd(llPop(chain));
+	}
+	else if (strcmp(command, "alias") == 0) {
+		if (count > 3) ignore(count - 3);
+
+		llPop(chain); // ignore command name
+		char* name = llPop(chain);
+		char* value = llPop(chain);
+
+		if (name != NULL) {
+			if (value != NULL) {
+				xsetalias(name, value);
+			}
+			else {
+				xgetalias(name);
+			}
+		}
+		else {
+			xprintalias();
+		}
+	}
+	else if (strcmp(command, "unalias") == 0) {
+		if (count > 1) ignore(count - 1);
+		
+		llPop(chain); // ignore command name
+		xunalias(llPop(chain));
+	}
+	else if (strcmp(command, "bye") == 0) {
+		xbye();
+	}
+	else {
+		// try executing
+	}
+}
+
 void shell_init() {
 	// init tables and linked lists
 	aliasTable = llCreate(0);
@@ -223,10 +290,14 @@ int main(int argc, char *argv[]) {
 		char* pwd = get_current_dir_name();
 		printf(KMAG "%s> " RESET, pwd);
 	
-		// start processing
+		// process input
 		if (yyparse() == 1) recover_from_errors();
-		
+
+		// process chain
 		llPrint(chain);
+		xshell();
+
+		// clear chain
 		llFree(chain);
 		chain = NULL;
 	}

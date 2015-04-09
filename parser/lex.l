@@ -5,11 +5,13 @@
 VAR [0-9a-zA-Z/:.~\-?*] 
 %%
 
-\"				return (int) '"';
-\{ 				return (int) '{';
-\} 				return (int) '}';
-\; 				return (int) ';';
-\&				return (int) '&';
+\"				return '"';
+\{ 				return '{';
+\} 				return '}';
+\; 				return ';';
+\$ 				return '$';
+\&				return '&';
+\~				return '~';
 
 {VAR}+ 			yylval.strval = strdup(yytext); return VAR;
 
