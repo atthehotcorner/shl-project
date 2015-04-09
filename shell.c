@@ -89,12 +89,6 @@ void xexecute(ll* list) {
 
 	//printf("Executing %s \n", list->start->name);
 
-	// check for alias here? (does not parse flags in alias)
-	char* alias = xgetalias(list->start->name);
-	if (alias != NULL) {
-		list->start->name = alias;
-	}
-
 	// See if command exists
 	char* path = xpathlookup(list->start->name);
 
@@ -131,7 +125,7 @@ char* xpathlookup(char* command) {
 	char* parsedPath = strtok(path, ":");
 
 	while (parsedPath != NULL) {
-		char* result = malloc(sizeof(command) + sizeof(parsedPath) + 2); // +1 for null, +1 for slash
+		char* result = malloc(strlen(command) + strlen(parsedPath) + 2); // +1 for null, +1 for slash
 		strcpy(result, parsedPath);
     	strcat(result, "/");
     	strcat(result, command);
@@ -142,8 +136,7 @@ char* xpathlookup(char* command) {
 		}
 
 		// next token
-		//printf("%s \n", result);
-		free(result); // bug when command is over 8 chars
+		free(result);
 		result = NULL;
 		parsedPath = strtok(NULL, ":");
 	}
@@ -158,14 +151,19 @@ void xexecutecommand(ll* list) {
 
 	// Parse list into argv
 	char** envp = {NULL};
-	char** argv = malloc(sizeof(char*) * (list->count + 1));
+	char** argv = calloc(list->count + 1, sizeof(char*));
 	argv[list->count] = NULL; // NULL terminator
-	
+
 	int i;
 	// no while loop, we need an index for argv
 	for (i = 0; i < list->count; i++) {
-		argv[i] = current->name;
-		current = current->next;
+		if (strcmp(current->name, "&") == 0) {
+			// needs to be ran in the background
+		}
+		else {
+			argv[i] = current->name;
+			current = current->next;
+		}
 	}
 
 	execve(argv[0], argv, envp); // or execv
@@ -180,7 +178,7 @@ void min() {
 }
 
 void ignore(int number) {
-	if (number < 2) printf(KYEL "Ignoring last %d additional argument. \n" RESET, number);
+	if (number < 2) printf(KYEL "Ignoring last additional argument. \n" RESET);
 	else printf(KYEL "Ignoring last %d additional arguments. \n" RESET, number);
 }
 
@@ -197,10 +195,12 @@ void xshell() {
 		llPop(chain); // ignore command name
 		xsetenv(llPop(chain), llPop(chain));
 	}
+
 	else if (strcmp(command, "printenv") == 0) {
 		if (count > 1) ignore(count - 1);
 		xprintenv();	
 	}
+
 	else if (strcmp(command, "unsetenv") == 0) {
 		if (count < 2) {min(); return;}
 		else if (count > 2) ignore(count - 2);
@@ -208,12 +208,14 @@ void xshell() {
 		llPop(chain); // ignore command name
 		xunalias(llPop(chain));
 	}
+
 	else if (strcmp(command, "cd") == 0) {
 		if (count > 2) ignore(count - 2);
 		
 		llPop(chain); // ignore command name
 		xcd(llPop(chain));
 	}
+
 	else if (strcmp(command, "alias") == 0) {
 		if (count > 3) ignore(count - 3);
 
@@ -233,17 +235,21 @@ void xshell() {
 			xprintalias();
 		}
 	}
+
 	else if (strcmp(command, "unalias") == 0) {
 		if (count > 1) ignore(count - 1);
 		
 		llPop(chain); // ignore command name
 		xunalias(llPop(chain));
 	}
+
 	else if (strcmp(command, "bye") == 0) {
 		xbye();
 	}
+
 	else {
 		// try executing
+		xexecute(chain);
 	}
 }
 
@@ -294,7 +300,7 @@ int main(int argc, char *argv[]) {
 		if (yyparse() == 1) recover_from_errors();
 
 		// process chain
-		llPrint(chain);
+		//llPrint(chain);
 		xshell();
 
 		// clear chain

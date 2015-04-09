@@ -20,8 +20,8 @@ extern int yylineno;
 	char* strval;
 	void* linkedlist;
 }
-%token NEWLINE
 %token <strval> VAR
+%token <strval> STRINGLITERAL
 %type <strval> variable
 %type <linkedlist> arguments
 %type <strval> argument
@@ -44,10 +44,6 @@ variable:
 		printf("Replacing %s with %s \n", $3, value);
 		$$ = value;
 	}
-	| '"' VAR '"' {
-		printf("Removing quotes\n");
-		$$ = $2;
-	}
 	| VAR {
 		$$ = $1;
 	}
@@ -57,6 +53,27 @@ variable:
 	}
 	| '~' {
 		$$ = getenv("HOME");
+	}
+	| STRINGLITERAL {
+		// need to parse inside for alias and env
+		printf("Removing quotes \n");
+		$$ = $1;
+	}
+	| '&' {
+		printf("external run plz \n");
+		$$ = "&";
+	}
+	| '<' VAR {
+		printf("file in \n");
+		$$ = $2;
+	}
+	| '>' VAR {
+		printf("file out \n");
+		$$ = $2;
+	}
+	| '2' '>' VAR {
+		printf("error out \n");
+		$$ = $3;
 	};
 
 xcommand:
@@ -69,7 +86,15 @@ arguments:
 	argument {
 		// First word
 		ll* list = llCreate(1);
-		llPush(list, $1, NULL);
+		
+		// check first word for alias
+		char* alias = xgetalias($1);
+		if (alias != NULL) {
+			llPush(list, alias, NULL);
+			// kick alias back out for reparsing
+		}
+		else llPush(list, $1, NULL);
+
 		$$ = list;
 	}
 	| arguments argument {
@@ -80,6 +105,6 @@ arguments:
 argument:
 	variable {
 		$$ = $1;
-	}
+	};
 %%
 

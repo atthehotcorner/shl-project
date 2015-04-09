@@ -26,7 +26,8 @@
 #include <dirent.h>
 #include <signal.h>
 #include <unistd.h>
-#include "linkedlist/ll.h"
+#include "lists/ll.h"
+#include "lists/chain.h"
 
 /*
   printf(KRED "red\n" RESET);

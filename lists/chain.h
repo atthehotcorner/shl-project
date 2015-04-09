@@ -1,18 +1,16 @@
-typedef struct node {
-	char* name;
-	char* value;
-	struct node* next;
-} node;
+#include "ll.h"
 
-
-typedef struct ll {
-	// 0 - will use name and value
-	// 1 - will only use name
-	int type;
+typedef struct chain {
 	int count;
-	struct node* start;
-	struct node* end;
-} ll;
+	int background; // 0 - not in background, 1 - in bg
+	
+	char* fileIn;
+	char* fileOut;
+	char* fileErrorOut;
+
+	struct ll* start;
+	struct ll* end;
+} chain;
 
 ll* llCreate(int x);
 void llFree(ll* list);
