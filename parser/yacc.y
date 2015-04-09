@@ -1,18 +1,17 @@
 %{
 #include "shell.h"
+extern int yyterminate;
 
 void yyerror(const char* str) {
 	fprintf(stderr, KRED "Error, %s \n" RESET, str);
 	// unusable command chain
-	llFree(chain);
-	chain = NULL;
+	chainReset(chainTable);
 }
 
 int yywrap() {
 	return 1;
 }
 
-extern int yylineno;
 %}
 %error-verbose
 %union {
@@ -20,10 +19,11 @@ extern int yylineno;
 	char* strval;
 	void* linkedlist;
 }
+%token STDERROUT
 %token <strval> VAR
 %token <strval> STRINGLITERAL
-%type <strval> variable
 %type <linkedlist> arguments
+%type <strval> ignore
 %type <strval> argument
 %%
 
@@ -32,53 +32,8 @@ commands:
 	| commands command;
 
 command:
-	xcommand;
-
-variable:
-	'$' '{' VAR '}' {
-		char* value = getenv($3);
-		if (value == NULL) {
-			yyerror("variable is not defined");
-			YYERROR;
-		}
-		printf("Replacing %s with %s \n", $3, value);
-		$$ = value;
-	}
-	| VAR {
-		$$ = $1;
-	}
-	| '~' VAR {
-		$$ = $2;
-		// look for users homepath here
-	}
-	| '~' {
-		$$ = getenv("HOME");
-	}
-	| STRINGLITERAL {
-		// need to parse inside for alias and env
-		printf("Removing quotes \n");
-		$$ = $1;
-	}
-	| '&' {
-		printf("external run plz \n");
-		$$ = "&";
-	}
-	| '<' VAR {
-		printf("file in \n");
-		$$ = $2;
-	}
-	| '>' VAR {
-		printf("file out \n");
-		$$ = $2;
-	}
-	| '2' '>' VAR {
-		printf("error out \n");
-		$$ = $3;
-	};
-
-xcommand:
 	arguments {
-		chain = $1;
+		chainPush(chainTable, $1);
 		YYACCEPT;
 	};
 
@@ -97,13 +52,66 @@ arguments:
 
 		$$ = list;
 	}
+	| arguments '|' {
+		printf("pipe \n");
+		chainPush(chainTable, $1);
+		$$ = llCreate(1);
+	}
+	| arguments ignore {
+		// ignore
+		$$ = $1;
+	}
 	| arguments argument {
 		llPush($1, $2, NULL);
 		$$ = $1;
 	};
+
+ignore:
+	STDERROUT {
+		printf("error stdout \n");
+		chainTable->fileErrorOut = NULL;
+	}
+	| '&' {
+		printf("external run plz \n");
+		chainTable->background = 1;
+	}
+	| '<' VAR {
+		printf("file in \n");
+		chainTable->fileIn = $2;
+	}
+	| '>' VAR {
+		printf("file out \n");
+		chainTable->fileOut = $2;
+	};
 	
 argument:
-	variable {
+	'$' '{' VAR '}' {
+		char* value = getenv($3);
+		if (value == NULL) {
+			yyerror("variable is not defined");
+			YYERROR;
+		}
+		printf("Replacing %s with %s \n", $3, value);
+		$$ = value;
+	}
+	| '~' VAR {
+		$$ = $2;
+		printf("user path lookup \n");
+		// look for users homepath here
+	}
+	| '~' {
+		$$ = getenv("HOME");
+	}
+	| '2' '>' VAR {
+		printf("error out \n");
+		$$ = $3;
+	}
+	| STRINGLITERAL {
+		// need to parse inside for alias and env
+		printf("Removing quotes \n");
+		$$ = $1;
+	}
+	| VAR {
 		$$ = $1;
 	};
 %%

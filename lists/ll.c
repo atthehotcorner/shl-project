@@ -9,6 +9,7 @@ ll* llCreate(int x) {
 	list->count = 0;
 	list->start = NULL;
 	list->end = NULL;
+	list->next = NULL;
 	return list;
 }
 
@@ -75,7 +76,7 @@ void llPushAlias(ll* list, char* name, char* value) {
 	// fix list pointers
 	if (nodeReplaced == 0) {
 		// create new node
-		node *new = malloc(sizeof(node));
+		node* new = malloc(sizeof(node));
 		new->name = name;
 		new->value = value;
 		new->next = NULL;

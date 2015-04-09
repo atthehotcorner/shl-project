@@ -11,4 +11,4 @@ yacc-config:
 	 $(YACC) -dyv parser/yacc.y
 
 build:
-	$(CC) lex.yy.c y.tab.c linkedlist/ll.c shell.c -g -o xshell
+	$(CC) lex.yy.c y.tab.c lists/ll.c lists/chain.c shell.c -g -o xshell

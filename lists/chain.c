@@ -3,254 +3,102 @@
 #include <string.h>
 #include "chain.h"
 
-ll* llCreate(int x) {
-	ll* list = malloc(sizeof(ll));
-	list->type = x;
-	list->count = 0;
-	list->start = NULL;
-	list->end = NULL;
-	return list;
+chain* chainCreate(int x) {
+	chain* command = malloc(sizeof(chain));
+	command->count = 0;
+	command->background = x;
+
+	char* fileIn = NULL;
+	char* fileOut = NULL;
+	char* fileErrorOut = NULL;
+
+	command->start = NULL;
+	command->end = NULL;
+
+	return command;
 }
 
-void llFree(ll* list) {
-	if (list == NULL) return;
+void chainReset(chain* command) {
+	if (command == NULL) return;
 
-	node* current = list->start;
-	node* prev = NULL;
+	ll* current = command->start;
+	ll* prev = NULL;
 
 	while (current != NULL) {
 		prev = current;
 		current = current->next;
 
-		free(prev);
-	} 
+		llFree(prev);
+	}
 
-	free(list);
-	list = NULL;
+	command->count = 0;
+	command->background = 0;
+	command->fileIn = NULL;
+	command->fileOut = NULL;
+	command->fileErrorOut = NULL;
+	command->start = NULL;
+	command->end = NULL;
 }
 
-void llPush(ll* list, char* name, char* value) {
-	if (list == NULL) return;
+void chainPush(chain* command, ll* list) {
+	if (command == NULL || list == NULL) return;
 
-	// create new node
-	node *new = malloc(sizeof(node));
-	new->name = name;
-	new->value = value;
-	new->next = NULL;
-
-	if (list->start == NULL) {
-		// no items in list
-		list->start = new;
-		list->end = new;
+	if (command->start == NULL) {
+		// no items in chain
+		command->start = list;
+		command->end = list;
 	}
 	else {
-		// add to end
-		list->end->next = new;
-		list->end = new;
+		list->next = NULL;
+		command->end->next = list;
+		command->end = list;
 	}
 
-	list->count++;
-}
-
-// for alias, dup checking
-void llPushAlias(ll* list, char* name, char* value) {
-	if (list == NULL) return;
-
-	// current node
-	node* current = malloc(sizeof(node));
-	current = list->start;
-
-	// traverse list and look if alias already exists
-	int nodeReplaced = 0;
-	while (current != NULL) {
-		if (strcmp(current->name, name) == 0) {
-			// overwrite alias
-			current->value = value;
-			nodeReplaced = 1;
-			break;
-		}
-		current = current->next;
-	}
-
-	// fix list pointers
-	if (nodeReplaced == 0) {
-		// create new node
-		node *new = malloc(sizeof(node));
-		new->name = name;
-		new->value = value;
-		new->next = NULL;
-
-		if (list->start == NULL) {
-			// no items in list
-			list->start = new;
-			list->end = new;
-		}
-		else {
-			// add to end
-			list->end->next = new;
-			list->end = new;
-		}
-		
-		list->count++;
-	}
-
-	free(current);
-}
-
-// get first found
-char* llGet(ll* list, char* name) {
-	if (list == NULL) return NULL;
-
-	// current node
-	node* current = list->start;
-
-	// traverse list and look for item
-	char* value;
-
-	int nodeFound = 0;
-	while (current != NULL) {
-		if (strcmp(current->name, name) == 0) {
-			// item found
-			value = current->value;
-			nodeFound = 1;
-			break;
-		}
-		current = current->next;
-	}
-
-	if (nodeFound == 1) return value;
-	else return NULL;
-}
-
-// for alias fetching
-char* llGetAlias(ll* list, char* name) {
-	if (list == NULL) return NULL;
-
-	char* value = llGetAliasRecursive(list, name, name);
-
-	if (strcmp(name, value) == 0) {
-		// alias not found or is circular
-		return NULL;
-	}
-	else return value;
-}
-
-char* llGetAliasRecursive(ll* list, char* name, char* originName) {
-	if (list == NULL) return NULL;
-
-	// current node
-	node* current = list->start;
-
-	// traverse list and look for alias
-	char* value;
-
-	int nodeFound = 0;
-	while (current != NULL) {
-		if (strcmp(current->name, name) == 0) {
-			// alias found
-			value = current->value;
-			nodeFound = 1;
-			break;
-		}
-		current = current->next;
-	}
-
-	if (nodeFound == 0) {
-		// name is not an alias
-		return name;
-	}
-	else if (strcmp(value, originName) == 0) {
-		// found alias is circular	
-		return originName;
-	}
-	else {
-		return llGetAliasRecursive(list, value, originName);
-	}
+	command->count++;
 }
 
 // Remove from front
-char* llPop(ll* list) {
-	if (list == NULL || list->start == NULL) return NULL;
+ll* chainPop(chain* command) {
+	if (command == NULL || command->start == NULL) return NULL;
 
 	// current and prev node
-	node* current = list->start;
-	node* next = list->start->next;
-
-	char* data = current->name;
+	ll* current = command->start;
+	ll* next = command->start->next;
 
 	if (next == NULL) {
 		// current is an only child
-		list->start = NULL;
-		list->end = NULL;
+		command->start = NULL;
+		command->end = NULL;
 	}
 	else {
-		list->start = next;
+		command->start = next;
 	}
 
-	list->count--;
-	free(current);
-	return data;
+	command->count--;
+	return current;
 }
 
-void llRemove(ll* list, char* name) {
-	if (list == NULL) return;
-
-	// current and prev node
-	node* current = list->start;
-	node* prev = NULL;
-
-	// traverse list and look for item
-	while (current != NULL) {
-		if (strcmp(current->name, name) == 0) {
-			// item found
-			if (prev == NULL) {
-				// current is start of list
-				list->start = current->next;
-
-				if (current->next == NULL) {
-					// current is an only child
-					list->start = NULL;
-					list->end = NULL;
-				}
-			}
-			else if (current->next == NULL) {
-				// current is end of list
-				prev->next = NULL;
-				list->end = prev;
-			}
-			else {
-				// current is in middle of list
-				prev->next = current->next;
-			}
-			
-			list->count--;
-
-			free(current);
-			break;
-		}
-		
-		prev = current;
-		current = current->next;
-	}
-}
-
-void llPrint(ll* list) {
-	if (list == NULL || list->start == NULL) {
+void chainPrint(chain* command) {
+	if (command == NULL || command->start == NULL) {
 		printf("No items found. \n");
 		return;
 	}
-	printf("Number of items: %d \n", list->count);
+
+	printf("Number of ll in command: %d \n", command->count);
+	if (command->fileIn != NULL) printf("Input from %s \n", command->fileIn);
+	if (command->fileOut != NULL) printf("Output to %s \n", command->fileOut);
+	if (command->fileErrorOut != NULL) printf("Error to %s \n", command->fileErrorOut);
+	if (command->background == 1) printf("Process in background \n");
 
 	// current node
-	node* current = list->start;
+	ll* current = command->start;
 
 	// print nodes
 	int index = 0;
 	
 	while (current != NULL) {
 		index++;
-		if (list->type == 1) printf("%s \n", current->name);
-		else printf("%s=%s \n", current->name, current->value);
+		llPrint(current);
 		current = current->next;
 	}
 }

@@ -59,7 +59,8 @@ void xunalias(char* name) {
 void xbye() {
 	printf(KGRN "Exiting [shellX] \n" RESET);
 	llFree(aliasTable);
-	llFree(chain);
+	chainReset(chainTable);
+	free(chainTable);
 	exit(0);
 }
 
@@ -182,18 +183,18 @@ void ignore(int number) {
 	else printf(KYEL "Ignoring last %d additional arguments. \n" RESET, number);
 }
 
-void xshell() {
-	if (chain == NULL || chain->start == NULL) return;
-	char* command = chain->start->name;
-	int count = chain->count;
+void xshell(ll* list) {
+	if (list == NULL || list->start == NULL) return;
+	char* command = list->start->name;
+	int count = list->count;
 
 	// check if built in or command
 	if (strcmp(command, "setenv") == 0) {
 		if (count < 3) {min(); return;}
 		else if (count > 3) ignore(count - 3);
 
-		llPop(chain); // ignore command name
-		xsetenv(llPop(chain), llPop(chain));
+		llPop(list); // ignore command name
+		xsetenv(llPop(list), llPop(list));
 	}
 
 	else if (strcmp(command, "printenv") == 0) {
@@ -205,23 +206,23 @@ void xshell() {
 		if (count < 2) {min(); return;}
 		else if (count > 2) ignore(count - 2);
 
-		llPop(chain); // ignore command name
-		xunalias(llPop(chain));
+		llPop(list); // ignore command name
+		xunalias(llPop(list));
 	}
 
 	else if (strcmp(command, "cd") == 0) {
 		if (count > 2) ignore(count - 2);
 		
-		llPop(chain); // ignore command name
-		xcd(llPop(chain));
+		llPop(list); // ignore command name
+		xcd(llPop(list));
 	}
 
 	else if (strcmp(command, "alias") == 0) {
 		if (count > 3) ignore(count - 3);
 
-		llPop(chain); // ignore command name
-		char* name = llPop(chain);
-		char* value = llPop(chain);
+		llPop(list); // ignore command name
+		char* name = llPop(list);
+		char* value = llPop(list);
 
 		if (name != NULL) {
 			if (value != NULL) {
@@ -239,8 +240,8 @@ void xshell() {
 	else if (strcmp(command, "unalias") == 0) {
 		if (count > 1) ignore(count - 1);
 		
-		llPop(chain); // ignore command name
-		xunalias(llPop(chain));
+		llPop(list); // ignore command name
+		xunalias(llPop(list));
 	}
 
 	else if (strcmp(command, "bye") == 0) {
@@ -249,14 +250,15 @@ void xshell() {
 
 	else {
 		// try executing
-		xexecute(chain);
+		xexecute(list);
 	}
 }
 
 void shell_init() {
-	// init tables and linked lists
+	// init storage
 	aliasTable = llCreate(0);
-	chain = NULL;
+	chainTable = chainCreate(0);
+	chainBuffer = NULL;
 
     llPush(aliasTable, "a", "c");
 	llPush(aliasTable, "b", "d");
@@ -264,6 +266,18 @@ void shell_init() {
 	llPush(aliasTable, "d", "dfinal");
 	llPush(aliasTable, "q", "pwd");
 	llPush(aliasTable, "w", "ls");
+	
+	ll* a = llCreate(1);
+	llPush(a, "0", NULL);
+	llPush(a, "1", NULL);
+	llPush(a, "2", NULL);
+	
+	ll* b = llCreate(1);
+	llPush(a, "b", NULL);
+	llPush(a, "c", NULL);
+	llPush(a, "d", NULL);
+	
+
 
 	/* get environment variables --NOT USED--
 	PATH = getenv("PATH");
@@ -284,7 +298,7 @@ int recover_from_errors() {
 	}
 	printf("\n" RESET);*/
 	
-	printf(KRED "An exception has occured. \n");
+	printf(KRED "An exception has occured. Recovering... \n" RESET);
 }
 
 int main(int argc, char *argv[]) {
@@ -300,12 +314,17 @@ int main(int argc, char *argv[]) {
 		if (yyparse() == 1) recover_from_errors();
 
 		// process chain
-		//llPrint(chain);
-		xshell();
+		chainPrint(chainTable);
+		
+		ll* command = chainPop(chainTable);
+		while (command != NULL) {
+			xshell(command);
+			command = chainPop(chainTable);
+		}
 
-		// clear chain
-		llFree(chain);
-		chain = NULL;
+		printf("clear the table \n");
+		// clear commands table
+		chainReset(chainTable);
 	}
 }
 

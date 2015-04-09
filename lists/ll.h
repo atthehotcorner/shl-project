@@ -1,3 +1,6 @@
+#ifndef LL
+#define LL
+
 typedef struct node {
 	char* name;
 	char* value;
@@ -10,6 +13,7 @@ typedef struct ll {
 	int count;	
 	struct node* start;
 	struct node* end;
+	struct ll* next;
 } ll;
 
 ll* llCreate(int x);
@@ -25,4 +29,7 @@ char* llGetAliasRecursive(ll* list, char* name, char* originName);
 char* llPop(ll* list);
 void llRemove(ll* list, char* name);
 void llPrint(ll* list);
+
+#endif
+
 

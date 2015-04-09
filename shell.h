@@ -66,7 +66,8 @@ extern char* yytext;
 extern int yylineno;
 
 ll* aliasTable;
-ll* chain; // stores parsed tokens
+char* chainBuffer;
+chain* chainTable; // stores parsed tokens
 
 #endif
 
