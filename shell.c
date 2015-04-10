@@ -56,11 +56,16 @@ void xunalias(char* name) {
 	llRemove(aliasTable, name);
 }
 
+void xdebug() {
+	printf("[Debugging info]\n");
+	printf("PATH: %s \n", getenv("PATH"));
+	printf("HOME: %s \n", getenv("HOME"));
+	printf("PWD: %s \n", get_current_dir_name());
+}
+
 void xbye() {
 	printf(KGRN "Exiting [shellX] \n" RESET);
 	llFree(aliasTable);
-	chainReset(chainTable);
-	free(chainTable);
 	exit(0);
 }
 
@@ -68,7 +73,33 @@ void xbye() {
 // Externals
 //
 void xexecute(ll* list) {
-	fprintf(stderr, KGRN "Executing %s \n" RESET, list->start->name);
+	/*if (!Executable()) {
+		//use access() system call with X_OK
+		printf("Command not Found");
+		return;
+	}
+	
+	/* Check io file existence in case of io-redirection.
+	if (check_in_file() == SYSERR) {
+		printf("Cann't read from : %s", srcf);
+		return;
+	}
+
+	if (check_out_file() == SYSERR) {
+		printf("Cann't write to : %s", distf);
+		return;
+	}*/
+	
+	//Build up the pipeline (create and set up pipe end points (using pipe, dup) 
+	//Process background*/
+
+	//printf("Executing %s \n", list->start->name);
+
+	// check for alias here? (does not parse flags in alias)
+	char* alias = xgetalias(list->start->name);
+	if (alias != NULL) {
+		list->start->name = alias;
+	}
 
 	// See if command exists
 	char* path = xpathlookup(list->start->name);
@@ -79,7 +110,7 @@ void xexecute(ll* list) {
 	}
 	else {
 		// invalid command, exit
-		fprintf(stderr, KRED "Error, could not find command %s. \n" RESET, list->start->name);
+		printf(KRED "Error, could not find command %s. \n" RESET, list->start->name);
 		return;
 	}
 
@@ -106,7 +137,7 @@ char* xpathlookup(char* command) {
 	char* parsedPath = strtok(path, ":");
 
 	while (parsedPath != NULL) {
-		char* result = malloc(strlen(command) + strlen(parsedPath) + 2); // +1 for null, +1 for slash
+		char* result = malloc(sizeof(command) + sizeof(parsedPath) + 2); // +1 for null, +1 for slash
 		strcpy(result, parsedPath);
     	strcat(result, "/");
     	strcat(result, command);
@@ -117,7 +148,8 @@ char* xpathlookup(char* command) {
 		}
 
 		// next token
-		free(result);
+		//printf("%s \n", result);
+		free(result); // bug when command is over 8 chars
 		result = NULL;
 		parsedPath = strtok(NULL, ":");
 	}
@@ -132,19 +164,14 @@ void xexecutecommand(ll* list) {
 
 	// Parse list into argv
 	char** envp = {NULL};
-	char** argv = calloc(list->count + 1, sizeof(char*));
+	char** argv = malloc(sizeof(char*) * (list->count + 1));
 	argv[list->count] = NULL; // NULL terminator
-
+	
 	int i;
 	// no while loop, we need an index for argv
 	for (i = 0; i < list->count; i++) {
-		if (strcmp(current->name, "&") == 0) {
-			// needs to be ran in the background
-		}
-		else {
-			argv[i] = current->name;
-			current = current->next;
-		}
+		argv[i] = current->name;
+		current = current->next;
 	}
 
 	execve(argv[0], argv, envp); // or execv
@@ -153,179 +180,20 @@ void xexecutecommand(ll* list) {
 //
 // shellX code
 //
-void min() {
-	fprintf(stderr, KRED "Missing required arguments. \n" RESET);
-	return;
-}
-
-void ignore(int number) {
-	if (number < 2) fprintf(stderr, KYEL "Ignoring last additional argument. \n" RESET);
-	else fprintf(stderr, KYEL "Ignoring last %d additional arguments. \n" RESET, number);
-}
-
-void restoreio() {
-   	fflush(stdin);
-   	dup2(defaultstdin, STDIN_FILENO);
-  	fflush(stdout);
-   	dup2(defaultstdout, STDOUT_FILENO);
-   	fflush(stderr);
-	dup2(defaultstderr, STDERR_FILENO);
-}
-
-void xshell(ll* list) {
-	if (list == NULL || list->start == NULL) return;
-	char* command = list->start->name;
-	int count = list->count;
-
-	// check for io redirections	
-	if (chainTable->fileIn != NULL) {
-		if (freopen(chainTable->fileIn, "r", stdin) == NULL) {
-			// couldnt open file
-			restoreio();
-			fprintf(stderr, "Problem opening %s for input. \n", chainTable->fileIn);
-			chainReset(chainTable); // kill following cmds
-		}
-		fprintf(stderr, "Input from %s \n", chainTable->fileIn);
-	}
-
-	if (chainTable->fileOut != NULL) {
-		char* mode = (chainTable->fileOutMode == 1)? "a":"w";
-
-		if (freopen(chainTable->fileOut, mode, stdout) == NULL) {
-			// couldnt open file
-			restoreio();
-			fprintf(stderr, "Problem opening %s for output. \n", chainTable->fileOut);
-			chainReset(chainTable); // kill following cmds
-		}
-		fprintf(stderr, "Output to %s \n", chainTable->fileOut);
-	}
-	
-	if (chainTable->fileErrorOut != NULL) {
-		if (freopen(chainTable->fileErrorOut, "a", stderr) == NULL) {
-			// couldnt open file
-			restoreio();
-			fprintf(stderr, "Cannot open %s as File IO_ERR \n", chainTable->fileErrorOut);
-			chainReset(chainTable); // kill following cmds
-		}
-		fprintf(stderr, "STDError to %s \n", chainTable->fileErrorOut);
-	}
-	else if (chainTable->fileErrorStdout == 1) {
-		fprintf(stderr, "STDError to stdout \n");
-		dup2(STDOUT_FILENO, STDERR_FILENO);
-	}
-
-	if (chainTable->background == 1) {
-		fprintf(stderr, "Process in background \n");
-	}
-
-	// check if built in or command
-	if (strcmp(command, "setenv") == 0) {
-		if (count < 3) {min(); return;}
-		else if (count > 3) ignore(count - 3);
-
-		llPop(list); // ignore command name
-		xsetenv(llPop(list), llPop(list));
-	}
-
-	else if (strcmp(command, "printenv") == 0) {
-		if (count > 1) ignore(count - 1);
-		xprintenv();	
-	}
-
-	else if (strcmp(command, "unsetenv") == 0) {
-		if (count < 2) {min(); return;}
-		else if (count > 2) ignore(count - 2);
-
-		llPop(list); // ignore command name
-		xunalias(llPop(list));
-	}
-
-	else if (strcmp(command, "cd") == 0) {
-		if (count > 2) ignore(count - 2);
-		
-		llPop(list); // ignore command name
-		xcd(llPop(list));
-	}
-
-	else if (strcmp(command, "alias") == 0) {
-		if (count > 3) ignore(count - 3);
-
-		llPop(list); // ignore command name
-		char* name = llPop(list);
-		char* value = llPop(list);
-
-		if (name != NULL) {
-			if (value != NULL) {
-				xsetalias(name, value);
-			}
-			else {
-				xgetalias(name);
-			}
-		}
-		else {
-			xprintalias();
-		}
-	}
-
-	else if (strcmp(command, "unalias") == 0) {
-		if (count > 1) ignore(count - 1);
-		
-		llPop(list); // ignore command name
-		xunalias(llPop(list));
-	}
-
-	else if (strcmp(command, "bye") == 0) {
-		xbye();
-	}
-
-	else {
-		// try executing
-		xexecute(list);
-	}
-
-	// return io redirections to normal
-	if (chainTable->fileIn != NULL) {
-		printf("return 1 \n");
-    	fflush(stdin);
-    	dup2(defaultstdin, STDIN_FILENO);
-    }
-    if (chainTable->fileOut != NULL) {
-  	  printf("return S2 \n");
-    	fflush(stdout);
-    	dup2(defaultstdout, STDOUT_FILENO);
-    }
-    if (chainTable->fileErrorOut != NULL || chainTable->fileErrorStdout != 0) {
-    	printf("return 3 \n");
-    	fflush(stderr);
-    	dup2(defaultstderr, STDERR_FILENO);
-    }
-}
-
 void shell_init() {
-	// init storage
+	// init alias table
 	aliasTable = llCreate(0);
-	chainTable = chainCreate(0);
-	chainBuffer = NULL;
-	defaultstdin = dup(STDIN_FILENO);
-    defaultstdout = dup(STDOUT_FILENO);
-    defaultstderr = dup(STDERR_FILENO);
 
-    /*llPush(aliasTable, "a", "c");
+    llPush(aliasTable, "a", "c");
 	llPush(aliasTable, "b", "d");
 	llPush(aliasTable, "c", "a");
 	llPush(aliasTable, "d", "dfinal");
 	llPush(aliasTable, "q", "pwd");
 	llPush(aliasTable, "w", "ls");
-	
-	ll* a = llCreate(1);
-	llPush(a, "0", NULL);
-	llPush(a, "1", NULL);
-	llPush(a, "2", NULL);
-	
-	ll* b = llCreate(1);
-	llPush(a, "b", NULL);
-	llPush(a, "c", NULL);
-	llPush(a, "d", NULL);*/
+
+	/* get environment variables --NOT USED--
+	PATH = getenv("PATH");
+	HOME = getenv("HOME");*/
     
 	// disable anything that can kill your shell. 
 	/*signal(SIGINT, SIG_IGN);  // Ctrl-C
@@ -342,7 +210,7 @@ int recover_from_errors() {
 	}
 	printf("\n" RESET);*/
 	
-	fprintf(stderr, KRED "An exception has occured. Recovering... \n" RESET);
+	printf(KRED "An exception has occured. \n");
 }
 
 int main(int argc, char *argv[]) {
@@ -354,21 +222,9 @@ int main(int argc, char *argv[]) {
 		char* pwd = get_current_dir_name();
 		printf(KMAG "%s> " RESET, pwd);
 	
-		// process input
+		// start processing
+		//yyparse();
 		if (yyparse() == 1) recover_from_errors();
-
-		// process chain
-		chainPrint(chainTable);
-		
-		ll* command = chainPop(chainTable);
-		while (command != NULL) {
-			xshell(command);
-			command = chainPop(chainTable);
-		}
-
-		fprintf(stderr, "clear the table \n");
-		// clear commands table
-		chainReset(chainTable);
 	}
 }
 

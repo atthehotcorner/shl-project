@@ -1,35 +1,34 @@
 %{
 #include <stdio.h>
 #include "y.tab.h"
-%}
-/* http://www.lysator.liu.se/c/ANSI-C-grammar-l.html */
-STRINGLITERAL [a-zA-Z_]?\"(\\.|[^\\"])*\"
-VAR [0-9a-zA-Z/:.~\-?*]
+%}	
+/* http://dinosaur.compilertools.net/yacc/
+[a-zA-Z0-9\/.-]+
+*/
+VAR [0-9a-zA-Z/:.~\-?*] 
 %%
 
-"|"					return '|';
-"{"					return '{';
-"}"					return '}';
-";"					return ';';
-"$"					return '$';
-"&"					return '&';
-"~"					return '~';
-"<"					return '<';
-">"					return '>';
-">>"				return STDOUTAPPEND;
-"2>&1"				return STDERROUT;
-"2>"				return STDERR;
+setenv			return xSETENV;
+printenv		return xPRINTENV;
+unsetenv		return xUNSETENV;
+cd 				return xCD;
+alias			return xALIAS;
+unalias			return xUNALIAS;
+debug			return xDEBUG;
+bye				return xBYE;
+exit			return xEXIT;
+quit			return xEXIT;
 
-{STRINGLITERAL}		{
-						yylval.strval = (char*)calloc(strlen(yytext)-1, sizeof(char));
-						strncpy(yylval.strval, &yytext[1], strlen(yytext)-2);
-						return STRINGLITERAL;
-					}
+\"				return (int) '"';
+\{ 				return (int) '{';
+\} 				return (int) '}';
+\; 				return (int) ';';
+\&				return (int) '&';
 
-{VAR}+ 				yylval.strval = strdup(yytext); return VAR;
+{VAR}+ 			yylval.strval = strdup(yytext); return VAR;
 
-\n					return 0;
-[ \t\r]+			/* whitespace */;
-. 					yyerror("input is not valid");
+\n				return NEWLINE;
+[ \t\r]+		/* whitespace */;
+. 				/* ignore */;
 %%
 

@@ -1,17 +1,15 @@
 %{
 #include "shell.h"
-extern int yyterminate;
 
 void yyerror(const char* str) {
 	fprintf(stderr, KRED "Error, %s \n" RESET, str);
-	// unusable command chain
-	chainReset(chainTable);
 }
 
 int yywrap() {
 	return 1;
 }
 
+extern int yylineno;
 %}
 %error-verbose
 %union {
@@ -19,111 +17,134 @@ int yywrap() {
 	char* strval;
 	void* linkedlist;
 }
-%token STDOUTAPPEND STDERROUT STDERR
+%token xSETENV xPRINTENV xUNSETENV xCD xALIAS xUNALIAS xDEBUG xBYE xEXIT NEWLINE
 %token <strval> VAR
-%token <strval> STRINGLITERAL
-%type <linkedlist> arguments
-%type <strval> ignore
-%type <strval> argument
+%type <strval> variable
+%type <linkedlist> ARGS
+%type <strval> ARG
 %%
 
 commands: 
 	/* blank */
-	| commands command;
+	| commands command {
+		// print current directory
+		char* pwd = get_current_dir_name();
+		printf(KBLU "%s> " RESET, pwd);
+	};
 
 command:
-	arguments {
-		chainPush(chainTable, $1);
+	variable
+	| setenv end
+	| printenv end
+	| unsetenv end
+	| cd end
+	| alias end
+	| unalias end
+	| debug end
+	| bye end
+	| exit end
+	| cmd end;
+
+end:
+	NEWLINE {
 		YYACCEPT;
 	};
 
-arguments:
-	argument {
-		// First word
-		ll* list = llCreate(1);
-		
-		// check first word for alias
-		char* alias = xgetalias($1);
-		if (alias != NULL) {
-			llPush(list, alias, NULL);
-			// kick alias back out for reparsing
-		}
-		else llPush(list, $1, NULL);
-
-		$$ = list;
-	}
-	| arguments '|' {
-		chainPush(chainTable, $1);
-		$$ = llCreate(1);
-	}
-	| arguments ignore {
-		// ignore
-		$$ = $1;
-	}
-	| arguments argument {
-		llPush($1, $2, NULL);
-		$$ = $1;
-	};
-
-ignore:
-	STDERROUT {
-		printf("srderr to stdout \n");
-		chainTable->fileErrorOut = NULL;
-		chainTable->fileErrorStdout = 1;
-	}
-	| STDERR VAR {
-		printf("srderr to file \n");
-		chainTable->fileErrorOut = $2;
-		chainTable->fileErrorStdout = 0;
-	}
-	| '&' {
-		printf("external run plz \n");
-		chainTable->background = 1;
-	}
-	| '<' VAR {
-		printf("file in \n");
-		chainTable->fileIn = $2;
-	}
-	| STDOUTAPPEND VAR {
-		printf("file out append \n");
-		chainTable->fileOut = $2;
-		chainTable->fileOutMode = 1;
-	}
-	| '>' VAR {
-		printf("file out write \n");
-		chainTable->fileOut = $2;
-		chainTable->fileOutMode = 0;
-	};
-	
-argument:
+// builtins
+variable:
 	'$' '{' VAR '}' {
 		char* value = getenv($3);
-		if (value == NULL) {
-			yyerror("variable is not defined");
-			YYERROR;
-		}
-		//printf("Replacing %s with %s \n", $3, value);
+		if (value == NULL) yyerror("variable is not defined");
+		else printf("Replacing %s with %s \n", $3, value);
 		$$ = value;
 	}
-	| '~' VAR {
+	| '"' VAR '"' {
+		printf("Removing quotes\n");
 		$$ = $2;
-		printf("user path lookup \n");
-		// look for users homepath here
-	}
-	| '~' {
-		$$ = getenv("HOME");
-	}
-	| '2' '>' VAR {
-		printf("error out \n");
-		$$ = $3;
-	}
-	| STRINGLITERAL {
-		// need to parse inside for alias and env
-		//printf("Removing quotes \n");
-		$$ = $1;
 	}
 	| VAR {
 		$$ = $1;
+	};
+
+setenv:
+	xSETENV variable variable {
+		xsetenv($2, $3);
+	};
+
+printenv:
+	xPRINTENV {
+		xprintenv();
+	};
+
+unsetenv:
+	xUNSETENV variable {
+		xunsetenv($2);
+	};
+
+cd:
+	xCD {
+		xcd(NULL);
+	}
+	| xCD variable {
+		xcd($2);
+	};
+
+alias:
+	xALIAS {
+		xprintalias();
+	}
+	| xALIAS variable {
+		xgetalias($2);
+	}
+	| xALIAS variable variable {
+		xsetalias($2, $3);
+	};
+
+unalias:
+	xUNALIAS VAR {
+		xunalias($2);
+	};
+
+debug: 
+	xDEBUG {
+		xdebug();
+	};
+
+bye:
+	xBYE {
+		xbye();
+	};
+
+exit:
+	xEXIT {
+		printf("Did you mean " KGRN "bye" RESET "? \n");
+	};
+
+// No match, could be exc command with argms	
+cmd:
+	ARGS {
+		xexecute($1);
+	};
+
+ARGS:
+	ARG {
+		// First word, check for alias here?
+		ll* list = llCreate(1);
+		llPush(list, $1, NULL);
+		$$ = list;
+	}
+	| ARGS ARG {
+		llPush($1, $2, NULL);
+		$$ = $1;
+	};
+	
+ARG:
+	variable {
+		$$ = $1;
+	}
+	| '&' {
+		printf("and\n");
+		$$ = (char*) '&';
 	};
 %%
 
