@@ -8,9 +8,11 @@ chain* chainCreate(int x) {
 	command->count = 0;
 	command->background = x;
 
-	char* fileIn = NULL;
-	char* fileOut = NULL;
-	char* fileErrorOut = NULL;
+	command->fileIn = NULL;
+	command->fileOut = NULL;
+	command->fileOutMode = 0;
+	command->fileErrorOut = NULL;
+	command->fileErrorStdout = 0;
 
 	command->start = NULL;
 	command->end = NULL;
@@ -35,7 +37,9 @@ void chainReset(chain* command) {
 	command->background = 0;
 	command->fileIn = NULL;
 	command->fileOut = NULL;
+	command->fileOutMode = 0;
 	command->fileErrorOut = NULL;
+	command->fileErrorStdout = 0;
 	command->start = NULL;
 	command->end = NULL;
 }

@@ -1,11 +1,6 @@
 # sh-llX Project
 Class project, details to come after due date.
 
-## Issues
-```
-Backslashed escaped characters still have slashes included in words.
-```
-
 ## Features
 ```
 setenv variable word
@@ -22,7 +17,14 @@ bye
 Commands in the form of
 ```
 cmd [arg]* [|cmd [arg]*]* [< fn1] [ >[>] fn2 ] [ 2>fn3 || 2>&1 ] [&]
-(piping, input, output, error, background incomplete)
+```
+
+```
+piping (needs testing)
+input (needs testing)
+output (complete, needs testing)
+error (needs testing)
+background (in progress)
 ```
 
 Environment variable expansion 

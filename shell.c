@@ -68,27 +68,7 @@ void xbye() {
 // Externals
 //
 void xexecute(ll* list) {
-	/*if (!Executable()) {
-		//use access() system call with X_OK
-		printf("Command not Found");
-		return;
-	}
-	
-	/* Check io file existence in case of io-redirection.
-	if (check_in_file() == SYSERR) {
-		printf("Cann't read from : %s", srcf);
-		return;
-	}
-
-	if (check_out_file() == SYSERR) {
-		printf("Cann't write to : %s", distf);
-		return;
-	}*/
-	
-	//Build up the pipeline (create and set up pipe end points (using pipe, dup) 
-	//Process background*/
-
-	//printf("Executing %s \n", list->start->name);
+	fprintf(stderr, KGRN "Executing %s \n" RESET, list->start->name);
 
 	// See if command exists
 	char* path = xpathlookup(list->start->name);
@@ -99,7 +79,7 @@ void xexecute(ll* list) {
 	}
 	else {
 		// invalid command, exit
-		printf(KRED "Error, could not find command %s. \n" RESET, list->start->name);
+		fprintf(stderr, KRED "Error, could not find command %s. \n" RESET, list->start->name);
 		return;
 	}
 
@@ -174,19 +154,69 @@ void xexecutecommand(ll* list) {
 // shellX code
 //
 void min() {
-	printf(KRED "Missing required arguments. \n" RESET);
+	fprintf(stderr, KRED "Missing required arguments. \n" RESET);
 	return;
 }
 
 void ignore(int number) {
-	if (number < 2) printf(KYEL "Ignoring last additional argument. \n" RESET);
-	else printf(KYEL "Ignoring last %d additional arguments. \n" RESET, number);
+	if (number < 2) fprintf(stderr, KYEL "Ignoring last additional argument. \n" RESET);
+	else fprintf(stderr, KYEL "Ignoring last %d additional arguments. \n" RESET, number);
+}
+
+void restoreio() {
+   	fflush(stdin);
+   	dup2(defaultstdin, STDIN_FILENO);
+  	fflush(stdout);
+   	dup2(defaultstdout, STDOUT_FILENO);
+   	fflush(stderr);
+	dup2(defaultstderr, STDERR_FILENO);
 }
 
 void xshell(ll* list) {
 	if (list == NULL || list->start == NULL) return;
 	char* command = list->start->name;
 	int count = list->count;
+
+	// check for io redirections	
+	if (chainTable->fileIn != NULL) {
+		if (freopen(chainTable->fileIn, "r", stdin) == NULL) {
+			// couldnt open file
+			restoreio();
+			fprintf(stderr, "Problem opening %s for input. \n", chainTable->fileIn);
+			chainReset(chainTable); // kill following cmds
+		}
+		fprintf(stderr, "Input from %s \n", chainTable->fileIn);
+	}
+
+	if (chainTable->fileOut != NULL) {
+		char* mode = (chainTable->fileOutMode == 1)? "a":"w";
+
+		if (freopen(chainTable->fileOut, mode, stdout) == NULL) {
+			// couldnt open file
+			restoreio();
+			fprintf(stderr, "Problem opening %s for output. \n", chainTable->fileOut);
+			chainReset(chainTable); // kill following cmds
+		}
+		fprintf(stderr, "Output to %s \n", chainTable->fileOut);
+	}
+	
+	if (chainTable->fileErrorOut != NULL) {
+		if (freopen(chainTable->fileErrorOut, "a", stderr) == NULL) {
+			// couldnt open file
+			restoreio();
+			fprintf(stderr, "Cannot open %s as File IO_ERR \n", chainTable->fileErrorOut);
+			chainReset(chainTable); // kill following cmds
+		}
+		fprintf(stderr, "STDError to %s \n", chainTable->fileErrorOut);
+	}
+	else if (chainTable->fileErrorStdout == 1) {
+		fprintf(stderr, "STDError to stdout \n");
+		dup2(STDOUT_FILENO, STDERR_FILENO);
+	}
+
+	if (chainTable->background == 1) {
+		fprintf(stderr, "Process in background \n");
+	}
 
 	// check if built in or command
 	if (strcmp(command, "setenv") == 0) {
@@ -252,6 +282,42 @@ void xshell(ll* list) {
 		// try executing
 		xexecute(list);
 	}
+
+	// return io redirections to normal
+	restoreio();
+}
+
+char* getaline() {
+	// http://stackoverflow.com/a/314422
+    char * line = malloc(100), * linep = line;
+    size_t lenmax = 100, len = lenmax;
+    int c;
+
+    if(line == NULL)
+        return NULL;
+
+    for(;;) {
+        c = fgetc(stdin);
+        if(c == EOF)
+            break;
+
+        if(--len == 0) {
+            len = lenmax;
+            char * linen = realloc(linep, lenmax *= 2);
+
+            if(linen == NULL) {
+                free(linep);
+                return NULL;
+            }
+            line = linen + (line - linep);
+            linep = linen;
+        }
+
+        if((*line++ = c) == '\n')
+            break;
+    }
+    *line = '\0';
+    return linep;
 }
 
 void shell_init() {
@@ -259,8 +325,11 @@ void shell_init() {
 	aliasTable = llCreate(0);
 	chainTable = chainCreate(0);
 	chainBuffer = NULL;
+	defaultstdin = dup(STDIN_FILENO);
+    defaultstdout = dup(STDOUT_FILENO);
+    defaultstderr = dup(STDERR_FILENO);
 
-    llPush(aliasTable, "a", "c");
+    /*llPush(aliasTable, "a", "c");
 	llPush(aliasTable, "b", "d");
 	llPush(aliasTable, "c", "a");
 	llPush(aliasTable, "d", "dfinal");
@@ -275,13 +344,7 @@ void shell_init() {
 	ll* b = llCreate(1);
 	llPush(a, "b", NULL);
 	llPush(a, "c", NULL);
-	llPush(a, "d", NULL);
-	
-
-
-	/* get environment variables --NOT USED--
-	PATH = getenv("PATH");
-	HOME = getenv("HOME");*/
+	llPush(a, "d", NULL);*/
     
 	// disable anything that can kill your shell. 
 	/*signal(SIGINT, SIG_IGN);  // Ctrl-C
@@ -298,7 +361,7 @@ int recover_from_errors() {
 	}
 	printf("\n" RESET);*/
 	
-	printf(KRED "An exception has occured. Recovering... \n" RESET);
+	fprintf(stderr, KRED "An exception has occured. Recovering... \n" RESET);
 }
 
 int main(int argc, char *argv[]) {
@@ -309,8 +372,12 @@ int main(int argc, char *argv[]) {
 		// print current directory
 		char* pwd = get_current_dir_name();
 		printf(KMAG "%s> " RESET, pwd);
-	
+
+		// get users input
+		char* input = getaline();
+
 		// process input
+		yy_scan_string(input);
 		if (yyparse() == 1) recover_from_errors();
 
 		// process chain
@@ -322,9 +389,10 @@ int main(int argc, char *argv[]) {
 			command = chainPop(chainTable);
 		}
 
-		printf("clear the table \n");
 		// clear commands table
 		chainReset(chainTable);
+		
+		fprintf(stderr, "clear the table \n");
 	}
 }
 

@@ -16,7 +16,9 @@ VAR [0-9a-zA-Z/:.~\-?*]
 "~"					return '~';
 "<"					return '<';
 ">"					return '>';
+">>"				return STDOUTAPPEND;
 "2>&1"				return STDERROUT;
+"2>"				return STDERR;
 
 {STRINGLITERAL}		{
 						yylval.strval = (char*)calloc(strlen(yytext)-1, sizeof(char));

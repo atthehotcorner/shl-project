@@ -19,7 +19,7 @@ int yywrap() {
 	char* strval;
 	void* linkedlist;
 }
-%token STDERROUT
+%token STDOUTAPPEND STDERROUT STDERR
 %token <strval> VAR
 %token <strval> STRINGLITERAL
 %type <linkedlist> arguments
@@ -53,7 +53,6 @@ arguments:
 		$$ = list;
 	}
 	| arguments '|' {
-		printf("pipe \n");
 		chainPush(chainTable, $1);
 		$$ = llCreate(1);
 	}
@@ -68,8 +67,14 @@ arguments:
 
 ignore:
 	STDERROUT {
-		printf("error stdout \n");
+		printf("srderr to stdout \n");
 		chainTable->fileErrorOut = NULL;
+		chainTable->fileErrorStdout = 1;
+	}
+	| STDERR VAR {
+		printf("srderr to file \n");
+		chainTable->fileErrorOut = $2;
+		chainTable->fileErrorStdout = 0;
 	}
 	| '&' {
 		printf("external run plz \n");
@@ -79,9 +84,15 @@ ignore:
 		printf("file in \n");
 		chainTable->fileIn = $2;
 	}
-	| '>' VAR {
-		printf("file out \n");
+	| STDOUTAPPEND VAR {
+		printf("file out append \n");
 		chainTable->fileOut = $2;
+		chainTable->fileOutMode = 1;
+	}
+	| '>' VAR {
+		printf("file out write \n");
+		chainTable->fileOut = $2;
+		chainTable->fileOutMode = 0;
 	};
 	
 argument:
@@ -91,7 +102,7 @@ argument:
 			yyerror("variable is not defined");
 			YYERROR;
 		}
-		printf("Replacing %s with %s \n", $3, value);
+		//printf("Replacing %s with %s \n", $3, value);
 		$$ = value;
 	}
 	| '~' VAR {
@@ -108,7 +119,7 @@ argument:
 	}
 	| STRINGLITERAL {
 		// need to parse inside for alias and env
-		printf("Removing quotes \n");
+		//printf("Removing quotes \n");
 		$$ = $1;
 	}
 	| VAR {

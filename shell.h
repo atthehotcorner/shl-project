@@ -57,6 +57,9 @@ void xexecute(ll* list);
 char* xpathlookup(char* command);
 void xexecutecommand(ll* list);
 
+void restoreio();
+char* getaline();
+
 // Globals
 extern char** environ;
 extern char* get_current_dir_name();
@@ -68,6 +71,10 @@ extern int yylineno;
 ll* aliasTable;
 char* chainBuffer;
 chain* chainTable; // stores parsed tokens
+
+int defaultstdin;
+int defaultstdout;
+int defaultstderr;
 
 #endif
 

@@ -8,7 +8,9 @@ typedef struct chain {
 
 	char* fileIn;
 	char* fileOut;
+	int fileOutMode; // 0 - write, 1 - append
 	char* fileErrorOut;
+	int fileErrorStdout; // 0 - false, 1 - true
 
 	struct ll* start;
 	struct ll* end;
