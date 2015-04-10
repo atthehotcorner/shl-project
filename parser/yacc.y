@@ -3,7 +3,7 @@
 extern int yyterminate;
 
 void yyerror(const char* str) {
-	fprintf(stderr, KRED "Error, %s \n" RESET, str);
+	fprintf(stderr, KRED "[xshell] %s \n" RESET, str);
 	// unusable command chain
 	chainReset(chainTable);
 }

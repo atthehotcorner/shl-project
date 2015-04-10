@@ -9,7 +9,7 @@
 void xsetenv(char* name, char* value) {
 	int success = setenv(name, value, 1);
 	if (success == 0) printf("Variable %s set to %s. \n", name, value);
-	else printf(KRED "Error, could not set %s as %s. \n" RESET, name, value);
+	else printf(KRED "[xshell] could not set %s as %s. \n" RESET, name, value);
 }
 
 void xprintenv() {
@@ -21,7 +21,7 @@ void xprintenv() {
 
 void xunsetenv(char* name) {
 	int success = unsetenv(name);
-	if (success != 0) printf(KRED "Error, could not remove %s. \n" RESET, name);
+	if (success != 0) printf(KRED "[xshell] could not remove %s. \n" RESET, name);
 }
 
 void xcd(char* path) {
@@ -31,14 +31,14 @@ void xcd(char* path) {
 	}
 	else {
 		if (chdir(path) == -1) {
-			printf(KRED "Error, %s is not a valid directory. \n" RESET, path);
+			printf(KRED "[xshell] %s is not a valid directory. \n" RESET, path);
 		}
 	}
 }
 	
 char* xgetalias(char* name) {
 	char* temp = llGetAlias(aliasTable, name);
-	//if (temp == NULL) printf(KRED "Error, %s was not found or is circular. \n" RESET, name);
+	//if (temp == NULL) printf(KRED "[xshell] %s was not found or is circular. \n" RESET, name);
 	return temp;
 }
 
@@ -57,7 +57,7 @@ void xunalias(char* name) {
 }
 
 void xbye() {
-	printf(KGRN "Exiting [shellX] \n" RESET);
+	printf(KCYN "leaving [xshell] \n" RESET);
 	llFree(aliasTable);
 	chainReset(chainTable);
 	free(chainTable);
@@ -79,7 +79,7 @@ void xexecute(ll* list) {
 	}
 	else {
 		// invalid command, exit
-		fprintf(stderr, KRED "Error, could not find command %s. \n" RESET, list->start->name);
+		fprintf(stderr, KRED "[xshell] could not find command %s. \n" RESET, list->start->name);
 		return;
 	}
 
@@ -127,11 +127,9 @@ char* xpathlookup(char* command) {
 }
 
 void xexecutecommand(ll* list) {
-	// http://geoffgarside.co.uk/2009/08/28/using-execve-for-the-first-time/
 	node* current = list->start;
 
 	// Parse list into argv
-	char** envp = {NULL};
 	char** argv = calloc(list->count + 1, sizeof(char*));
 	argv[list->count] = NULL; // NULL terminator
 
@@ -147,11 +145,11 @@ void xexecutecommand(ll* list) {
 		}
 	}
 
-	execve(argv[0], argv, envp); // or execv
+	execv(argv[0], argv);
 }
 
 //
-// shellX code
+// xshell code
 //
 void min() {
 	fprintf(stderr, KRED "Missing required arguments. \n" RESET);
@@ -320,6 +318,41 @@ char* getaline() {
     return linep;
 }
 
+char* expand_environment_variables(char* s) {
+	// http://stackoverflow.com/a/20715800
+	char* x = strstr(s, "${");
+	char* xx = strstr(s, "}");
+    if (x == NULL || xx == NULL) return s;
+
+	int length = strlen(s);
+	int preSize = x-s;
+	int postSize = length - (xx-s) - 1; // -1 for }
+	int varSize = length - preSize - postSize - 3; // -3 for ${}
+
+	char* pre = malloc(sizeof(char) * (preSize + 1));
+	char* post = malloc(sizeof(char) * (postSize + 1));
+	char* var = malloc(sizeof(char) * (varSize + 1));
+
+	int i;
+	for (i = 0; s[i]; i++) {
+	    if (i < preSize) pre[i] = s[i];
+	    if (i > preSize+1 && i < preSize+varSize+2) var[i-(preSize+2)] = s[i];
+	    if (i > preSize+varSize+2) post[i-(preSize+varSize+3)] = s[i];
+	}
+	
+	char* y = getenv(var);
+	if (y == NULL) {
+		fprintf(stderr, KRED "[xshell] %s is not a valid environment variable. \n" RESET, var);
+		return NULL;
+	}
+    
+    strcat(pre, y);
+    strcat(pre, post);
+    //if (post != NULL) free(post);
+    //if (var != NULL) free(var);
+    return expand_environment_variables(pre);
+}
+
 void shell_init() {
 	// init storage
 	aliasTable = llCreate(0);
@@ -353,20 +386,12 @@ void shell_init() {
 }
 
 int recover_from_errors() {
-	/*printf(KRED "An exception has occured. \nRecovering [%s]... ", yytext);
-
-	int x = yylex();
-	while (x != 0 && x != 59) {
-	    printf("[%s] %d ... ", yytext, x);
-	}
-	printf("\n" RESET);*/
-	
-	fprintf(stderr, KRED "An exception has occured. Recovering... \n" RESET);
+	fprintf(stderr, KRED "Cannot continue, recovering... \n" RESET);
 }
 
 int main(int argc, char *argv[]) {
 	shell_init();
-	printf(KGRN "Launching [shellX] \n" RESET);
+	printf(KCYN "starting [xshell] \nbuilt %s %s \n" RESET, __DATE__, __TIME__);
 
 	while (1) {
 		// print current directory
@@ -377,6 +402,10 @@ int main(int argc, char *argv[]) {
 		char* input = getaline();
 
 		// process input
+		char* input2 = expand_environment_variables(input);
+		
+		//printf(KCYN "%s" RESET, input2);
+		
 		yy_scan_string(input);
 		if (yyparse() == 1) recover_from_errors();
 
@@ -389,7 +418,8 @@ int main(int argc, char *argv[]) {
 			command = chainPop(chainTable);
 		}
 
-		// clear commands table
+		// free up memory
+		free(input);
 		chainReset(chainTable);
 		
 		fprintf(stderr, "clear the table \n");
