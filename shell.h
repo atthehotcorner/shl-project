@@ -26,7 +26,8 @@
 #include <dirent.h>
 #include <signal.h>
 #include <unistd.h>
-#include "linkedlist/ll.h"
+#include "lists/ll.h"
+#include "lists/chain.h"
 
 /*
   printf(KRED "red\n" RESET);
@@ -50,12 +51,13 @@ void xsetalias(char* name, char* value);
 void xprintalias();
 void xunalias(char* name);
 
-void xdebug();
 void xbye();
 
 void xexecute(ll* list);
 char* xpathlookup(char* command);
 void xexecutecommand(ll* list);
+
+void restoreio();
 
 // Globals
 extern char** environ;
@@ -64,7 +66,14 @@ extern FILE* yyin;
 extern FILE* yyout;
 extern char* yytext;
 extern int yylineno;
+
 ll* aliasTable;
+char* chainBuffer;
+chain* chainTable; // stores parsed tokens
+
+int defaultstdin;
+int defaultstdout;
+int defaultstderr;
 
 #endif
 
