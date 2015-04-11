@@ -7,6 +7,7 @@ chain* chainCreate(int x) {
 	chain* command = malloc(sizeof(chain));
 	command->count = 0;
 	command->background = x;
+	command->parsed = 0;
 
 	command->fileIn = NULL;
 	command->fileOut = NULL;
@@ -35,6 +36,7 @@ void chainReset(chain* command) {
 
 	command->count = 0;
 	command->background = 0;
+	command->parsed = 0;
 	command->fileIn = NULL;
 	command->fileOut = NULL;
 	command->fileOutMode = 0;

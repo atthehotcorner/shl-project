@@ -57,7 +57,7 @@ void xunalias(char* name) {
 }
 
 void xbye() {
-	printf(KCYN "leaving [xshell] \n" RESET);
+	printf(KCYN "\nleaving [xshell] \n\n" RESET);
 	llFree(aliasTable);
 	chainReset(chainTable);
 	free(chainTable);
@@ -88,7 +88,16 @@ void xexecute(ll* list) {
 	int background = chainTable->background; // 0 - not in background, 1 - in bg
 	pid_t pid = fork();
 
-	if (pid == 0) {
+	if (pid == -1) {
+		fprintf(stderr, KRED "[xshell] could not create fork for %s. \n" RESET, list->start->name);
+		perror("error creating fork");
+		return;
+	}
+	else if (pid == 0) {
+		// In the child process
+		signal(SIGQUIT, SIG_DFL); // to quit child if nes
+		signal(SIGINT, SIG_DFL);
+
 		node* current = list->start;
 
 		// Parse list into argv
@@ -157,11 +166,11 @@ void ignore(int number) {
 void restoreio() {
 	//printf("flush\n");
    	fflush(stdin);
-   	dup2(defaultstdin, STDIN_FILENO);
+   	dup2(default_stdin, STDIN_FILENO);
   	fflush(stdout);
-   	dup2(defaultstdout, STDOUT_FILENO);
+   	dup2(default_stdout, STDOUT_FILENO);
    	fflush(stderr);
-	dup2(defaultstderr, STDERR_FILENO);
+	dup2(default_stderr, STDERR_FILENO);
 }
 
 void xshell(ll* list) {
@@ -169,21 +178,14 @@ void xshell(ll* list) {
 	char* command = list->start->name;
 	int count = list->count;
 
-	// check for io redirections	
-	if (chainTable->fileIn != NULL) {
-		if (freopen(chainTable->fileIn, "r", stdin) == NULL) {
-			// couldnt open file
-			restoreio();
-			fprintf(stderr, "Problem opening %s for input. \n", chainTable->fileIn);
-			chainReset(chainTable); // kill following cmds
-		}
-		//fprintf(stderr, "Input from %s \n", chainTable->fileIn);
-	}
-
+	// Check for io output redirections
 	if (chainTable->fileOut != NULL) {
-		char* mode = (chainTable->fileOutMode == 1)? "a":"w";
+		char* mode;
+		if (chainTable->fileOutMode == 1) mode = "a";
+		else mode = "w";
 
-		if (freopen(chainTable->fileOut, mode, stdout) == NULL) {
+		FILE* out = freopen(chainTable->fileOut, mode, stdout);
+		if (out == NULL) {
 			// couldnt open file
 			restoreio();
 			fprintf(stderr, "Problem opening %s for output. \n", chainTable->fileOut);
@@ -193,7 +195,8 @@ void xshell(ll* list) {
 	}
 	
 	if (chainTable->fileErrorOut != NULL) {
-		if (freopen(chainTable->fileErrorOut, "a", stderr) == NULL) {
+		FILE* errout = freopen(chainTable->fileErrorOut, "a", stderr);
+		if (errout == NULL) {
 			// couldnt open file
 			restoreio();
 			fprintf(stderr, "Cannot open %s as File IO_ERR \n", chainTable->fileErrorOut);
@@ -210,7 +213,7 @@ void xshell(ll* list) {
 		//fprintf(stderr, "Process in background \n");
 	}
 
-	// check if built in or command
+	// Check if built in or command
 	if (strcmp(command, "setenv") == 0) {
 		if (count < 3) {min(); return;}
 		else if (count > 3) ignore(count - 3);
@@ -422,10 +425,10 @@ void shell_init() {
 	// init storage
 	aliasTable = llCreate(0);
 	chainTable = chainCreate(0);
-	chainBuffer = NULL;
-	defaultstdin = dup(STDIN_FILENO);
-	defaultstdout = dup(STDOUT_FILENO);
-	defaultstderr = dup(STDERR_FILENO);
+
+	default_stdin = dup(STDIN_FILENO);
+	default_stdout = dup(STDOUT_FILENO);
+	default_stderr = dup(STDERR_FILENO);
 
 	/*llPush(aliasTable, "a", "c a");
 	llPush(aliasTable, "b", "d");
@@ -445,9 +448,9 @@ void shell_init() {
 	llPush(a, "d", NULL);*/
 	
 	// disable anything that can kill your shell. 
-	/*signal(SIGINT, SIG_IGN);  // Ctrl-C
+	signal(SIGINT, SIG_IGN);  // Ctrl-C
 	signal(SIGQUIT, SIG_IGN); // Ctrl-backslash
-	signal(SIGTSTP, SIG_IGN); // Ctrl-Z*/
+	signal(SIGTSTP, SIG_IGN); // Ctrl-Z
 }
 
 int recover_from_errors() {
@@ -456,24 +459,63 @@ int recover_from_errors() {
 
 int main(int argc, char *argv[]) {
 	shell_init();
-	printf(KCYN "starting [xshell] \nbuilt %s %s \n" RESET, __DATE__, __TIME__);
+	printf(KCYN "\nstarting [xshell] \nbuilt %s %s \n\n" RESET, __DATE__, __TIME__);
+	
+	int redirected = 0;
+	if (!isatty(STDIN_FILENO)) redirected = 1;
+
+	/*char* input = getaline();
+	while (strlen(input) != 0) {
+		printf("%s\n", input);
+		input = getaline();
+	}*/
 
 	while (1) {
 		// print current directory
 		char* pwd = get_current_dir_name();
 		printf(KMAG "%s> " RESET, pwd);
 
-		// get users input
+		// get input
 		char* input = getaline();
+		if (redirected == 1) {
+			if (strlen(input) == 0) {
+				printf("\n");
+				xbye();
+			}
+			else printf("%s", input);
+		}
 
 		// process input
 		input = expand_aliases(input);
 		input = expand_environment_variables(input);
 		
 		//printf(KCYN "%lu" RESET, strlen(input));
-		
+
 		yy_scan_string(input);
 		if (yyparse() == 1) recover_from_errors();
+		chainTable->parsed = 1;
+
+		// if there is input, reparse
+		if (chainTable->fileIn != NULL) {
+			FILE* in = freopen(chainTable->fileIn, "r", stdin);
+			if (in == NULL) {
+				restoreio();
+				fprintf(stderr, "[xshell] problem opening %s for input. \n", chainTable->fileIn);
+				chainReset(chainTable); // kill following cmds
+			}
+			
+			char* input2 = getaline();
+
+			while (strlen(input2) != 0) {
+				//printf("%s", input2);
+				yy_scan_string(input2);
+				if (yyparse() == 1) recover_from_errors();
+				input2 = getaline();
+			}
+
+		   	fflush(stdin);
+		   	dup2(default_stdin, STDIN_FILENO);
+		}
 
 		// process chain
 		//chainPrint(chainTable);

@@ -27,6 +27,7 @@
 #include <signal.h>
 #include <unistd.h>
 #include <pwd.h>
+#include <fcntl.h>
 #include "lists/ll.h"
 #include "lists/chain.h"
 
@@ -73,9 +74,9 @@ ll* aliasTable;
 char* chainBuffer;
 chain* chainTable; // stores parsed tokens
 
-int defaultstdin;
-int defaultstdout;
-int defaultstderr;
+int default_stdin;
+int default_stdout;
+int default_stderr;
 
 #endif
 

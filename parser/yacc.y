@@ -54,7 +54,7 @@ arguments:
 		$$ = llCreate(1);
 	}
 	| arguments ignore {
-		if (chainTable->background == 1) {
+		if (chainTable->background == 1 && chainTable->parsed == 0) {
 			// make sure & is last thing processed
 			yyerror("& must be placed at the end of commands.");
 			YYERROR;
@@ -68,9 +68,10 @@ arguments:
 			yyerror("& must be placed at the end of commands.");
 			YYERROR;
 		}
-		if (chainTable->fileIn != NULL || chainTable->fileOut != NULL ||
+		if ((chainTable->fileIn != NULL || chainTable->fileOut != NULL ||
 			(chainTable->fileErrorOut == NULL && chainTable->fileErrorStdout == 1) ||
-			(chainTable->fileErrorOut != NULL && chainTable->fileErrorStdout == 0)
+			(chainTable->fileErrorOut != NULL && chainTable->fileErrorStdout == 0)) &&
+			chainTable->parsed == 0
 		) {
 			// make sure any IO redirection is after aruguments
 			yyerror("IO redirection must be placed after any commands.");
