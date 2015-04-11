@@ -160,25 +160,8 @@ char* llGetAliasRecursive(ll* list, char* name, char* originName) {
 		// name is not an alias
 		return name;
 	}
-
-	// check if infinite
-	char *str = strdup(value);
-	char *end_str;
-	char *token = strtok_r(str, " \t\n", &end_str);
-	int infinite = 0;
-	
-	while (token != NULL) {
-		if (strcmp(token, originName) == 0) {
-			// found alias is circular
-			infinite = 1;
-			break;
-		}
-		token = strtok_r(NULL, " \t\n", &end_str);
-	}
-	
-	if (infinite == 1) {
-		// found alias is circular
-		printf("circular\n");
+	else if (strcmp(value, originName) == 0) {
+		// found alias is circular	
 		return originName;
 	}
 	else {

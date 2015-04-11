@@ -24,7 +24,7 @@ piping (needs testing)
 input (needs testing)
 output (complete, needs testing)
 error (needs testing)
-background (not yet implemented, code exists)
+background (Not yet implemented)
 ```
 
 Environment variable expansion 

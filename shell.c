@@ -37,10 +37,8 @@ void xcd(char* path) {
 }
 	
 char* xgetalias(char* name) {
-	printf("looking\n");
 	char* temp = llGetAlias(aliasTable, name);
 	//if (temp == NULL) printf(KRED "[xshell] %s was not found or is circular. \n" RESET, name);
-	printf("[%s]\n", temp);
 	return temp;
 }
 
@@ -87,30 +85,15 @@ void xexecute(ll* list) {
 
 	// Time to execute
 	int status;
-	int background = chainTable->background; // 0 - not in background, 1 - in bg
 	pid_t pid = fork();
 
 	if (pid == 0) {
-		node* current = list->start;
-
-		// Parse list into argv
-		char** argv = calloc(list->count + 1, sizeof(char*));
-		argv[list->count] = NULL; // NULL terminator
-
-		int i;
-		// no while loop, we need an index for argv
-		for (i = 0; i < list->count; i++) {
-			argv[i] = current->name;
-			current = current->next;
-		}
-
-		execve(argv[0], argv, environ);
-
-		exit(0); // if returned here fatal error
+		xexecutecommand(list);
+		exit(0); // if command fails
 	}
 	else {
 		llFree(list); // no longer needed
-		if (background != 1) waitpid(pid, &status, 0);
+		waitpid(pid, &status, 0);
 	}
 }
 
@@ -125,8 +108,8 @@ char* xpathlookup(char* command) {
 	while (parsedPath != NULL) {
 		char* result = malloc(strlen(command) + strlen(parsedPath) + 2); // +1 for null, +1 for slash
 		strcpy(result, parsedPath);
-		strcat(result, "/");
-		strcat(result, command);
+    	strcat(result, "/");
+    	strcat(result, command);
 
 		// found the winning path!
 		if (access(result, X_OK) == 0) {
@@ -141,6 +124,28 @@ char* xpathlookup(char* command) {
 
 	// not found
 	return NULL;
+}
+
+void xexecutecommand(ll* list) {
+	node* current = list->start;
+
+	// Parse list into argv
+	char** argv = calloc(list->count + 1, sizeof(char*));
+	argv[list->count] = NULL; // NULL terminator
+
+	int i;
+	// no while loop, we need an index for argv
+	for (i = 0; i < list->count; i++) {
+		if (strcmp(current->name, "&") == 0) {
+			// needs to be ran in the background
+		}
+		else {
+			argv[i] = current->name;
+			current = current->next;
+		}
+	}
+
+	execv(argv[0], argv);
 }
 
 //
@@ -283,112 +288,42 @@ void xshell(ll* list) {
 
 char* getaline() {
 	// http://stackoverflow.com/a/314422
-	char * line = malloc(100), * linep = line;
-	size_t lenmax = 100, len = lenmax;
-	int c;
+    char * line = malloc(100), * linep = line;
+    size_t lenmax = 100, len = lenmax;
+    int c;
 
-	if(line == NULL)
-		return NULL;
+    if(line == NULL)
+        return NULL;
 
-	for(;;) {
-		c = fgetc(stdin);
-		if(c == EOF)
-			break;
+    for(;;) {
+        c = fgetc(stdin);
+        if(c == EOF)
+            break;
 
-		if(--len == 0) {
-			len = lenmax;
-			char * linen = realloc(linep, lenmax *= 2);
+        if(--len == 0) {
+            len = lenmax;
+            char * linen = realloc(linep, lenmax *= 2);
 
-			if(linen == NULL) {
-				free(linep);
-				return NULL;
-			}
-			line = linen + (line - linep);
-			linep = linen;
-		}
+            if(linen == NULL) {
+                free(linep);
+                return NULL;
+            }
+            line = linen + (line - linep);
+            linep = linen;
+        }
 
-		if((*line++ = c) == '\n')
-			break;
-	}
-	*line = '\0';
-	return linep;
-}
-
-char* expand_aliases(char* s) {
-	// based on stackoverflow 4693942 and 12460480
-	char *str = strdup(s);
-	char *end_str;
-	char *token = strtok_r(str, " \t\n", &end_str);
-
-	char *newStr = "";
-
-	while (token != NULL) {
-		//printf("[%s]\n", token);
-
-		char *end_token;
-		char *dup = strdup(token);
-
-		char* alias = xgetalias(token);
-		char* temp;
-
-		if (alias != NULL) {
-			temp = malloc(strlen(newStr) + strlen(alias) + 1);
-			strcpy(temp, newStr);
-			strcat(temp, alias);
-		}
-		else {
-			temp = malloc(strlen(newStr) + strlen(token) + 1);
-			strcpy(temp, newStr);
-			strcat(temp, token);
-		}
-
-		strcat(temp, " ");
-		newStr = temp;
-
-		/*char *token2 = strtok_r(token, "&|", &end_token);
-
-		int i = 0;
-		while (token2 != NULL) {
-			printf("\t[%c] %s\n", dup[token2-token-1], token2);
-
-			char *temp;
-			if (i != 0) temp = malloc(strlen(newStr) + strlen(&dup[token2-token-1]) + strlen(token2));
-			else temp = malloc(strlen(newStr) + strlen(token2));
-			strcpy(temp, newStr);
-			if (i != 0) strcat(temp, &dup[token2-token-1]); // add delimiter
-			strcat(temp, token2); // add token
-			newStr = temp;
-
-			token2 = strtok_r(NULL, "&|", &end_token);
-			i++;
-		}
-
-		char *temp;
-		if (i == 0) {
-			temp = malloc(strlen(newStr) + strlen(token) + 1);
-			strcpy(temp, newStr);
-			strcat(temp, token); // add delimiter
-			strcat(temp, " "); // add space
-		}
-		else {
-			temp = malloc(strlen(newStr) + 1);
-			strcpy(temp, newStr);
-			strcat(temp, " "); // add space
-		}
-		newStr = temp;*/
-
-		token = strtok_r(NULL, " \t\n", &end_str);
-	}
-	
-	//printf("%s\n", newStr);
-	return s;
+        if((*line++ = c) == '\n')
+            break;
+    }
+    *line = '\0';
+    return linep;
 }
 
 char* expand_environment_variables(char* s) {
-	// based on stackoverflow 20715800
+	// http://stackoverflow.com/a/20715800
 	char* x = strstr(s, "${");
 	char* xx = strstr(s, "}");
-	if (x == NULL || xx == NULL) return s;
+    if (x == NULL || xx == NULL) return s;
 
 	int length = strlen(s);
 	int preSize = x-s;
@@ -401,9 +336,9 @@ char* expand_environment_variables(char* s) {
 
 	int i;
 	for (i = 0; s[i]; i++) {
-		if (i < preSize) pre[i] = s[i];
-		if (i > preSize+1 && i < preSize+varSize+2) var[i-(preSize+2)] = s[i];
-		if (i > preSize+varSize+2) post[i-(preSize+varSize+3)] = s[i];
+	    if (i < preSize) pre[i] = s[i];
+	    if (i > preSize+1 && i < preSize+varSize+2) var[i-(preSize+2)] = s[i];
+	    if (i > preSize+varSize+2) post[i-(preSize+varSize+3)] = s[i];
 	}
 	
 	char* y = getenv(var);
@@ -411,12 +346,12 @@ char* expand_environment_variables(char* s) {
 		fprintf(stderr, KRED "[xshell] %s is not a valid environment variable. \n" RESET, var);
 		return NULL;
 	}
-	
-	strcat(pre, y);
-	strcat(pre, post);
-	//if (post != NULL) free(post);
-	//if (var != NULL) free(var);
-	return expand_environment_variables(pre);
+    
+    strcat(pre, y);
+    strcat(pre, post);
+    //if (post != NULL) free(post);
+    //if (var != NULL) free(var);
+    return expand_environment_variables(pre);
 }
 
 void shell_init() {
@@ -425,10 +360,10 @@ void shell_init() {
 	chainTable = chainCreate(0);
 	chainBuffer = NULL;
 	defaultstdin = dup(STDIN_FILENO);
-	defaultstdout = dup(STDOUT_FILENO);
-	defaultstderr = dup(STDERR_FILENO);
+    defaultstdout = dup(STDOUT_FILENO);
+    defaultstderr = dup(STDERR_FILENO);
 
-	llPush(aliasTable, "a", "c a");
+    /*llPush(aliasTable, "a", "c");
 	llPush(aliasTable, "b", "d");
 	llPush(aliasTable, "c", "a");
 	llPush(aliasTable, "d", "dfinal");
@@ -443,12 +378,12 @@ void shell_init() {
 	ll* b = llCreate(1);
 	llPush(a, "b", NULL);
 	llPush(a, "c", NULL);
-	llPush(a, "d", NULL);
-	
+	llPush(a, "d", NULL);*/
+    
 	// disable anything that can kill your shell. 
 	/*signal(SIGINT, SIG_IGN);  // Ctrl-C
-	signal(SIGQUIT, SIG_IGN); // Ctrl-backslash
-	signal(SIGTSTP, SIG_IGN); // Ctrl-Z*/
+    signal(SIGQUIT, SIG_IGN); // Ctrl-backslash
+    signal(SIGTSTP, SIG_IGN); // Ctrl-Z*/
 }
 
 int recover_from_errors() {
@@ -468,10 +403,9 @@ int main(int argc, char *argv[]) {
 		char* input = getaline();
 
 		// process input
-		input = expand_aliases(input);
-		input = expand_environment_variables(input);
+		char* input2 = expand_environment_variables(input);
 		
-		printf(KCYN "%s" RESET, input);
+		//printf(KCYN "%s" RESET, input2);
 		
 		yy_scan_string(input);
 		if (yyparse() == 1) recover_from_errors();

@@ -41,7 +41,15 @@ arguments:
 	argument {
 		// First word
 		ll* list = llCreate(1);
-		llPush(list, $1, NULL);
+		
+		// check first word for alias
+		char* alias = xgetalias($1);
+		if (alias != NULL) {
+			llPush(list, alias, NULL);
+			// kick alias back out for reparsing
+		}
+		else llPush(list, $1, NULL);
+
 		$$ = list;
 	}
 	| arguments '|' {
@@ -110,6 +118,8 @@ argument:
 		$$ = $3;
 	}
 	| STRINGLITERAL {
+		// need to parse inside for alias and env
+		//printf("Removing quotes \n");
 		$$ = $1;
 	}
 	| VAR {
