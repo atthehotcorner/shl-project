@@ -173,12 +173,13 @@ char* llGetAliasRecursive(ll* list, char* name, char* originName) {
 			infinite = 1;
 			break;
 		}
+		
 		token = strtok_r(NULL, " \t\n", &end_str);
 	}
 	
 	if (infinite == 1) {
 		// found alias is circular
-		printf("circular\n");
+		//printf("circular\n");
 		return originName;
 	}
 	else {
