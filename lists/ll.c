@@ -178,7 +178,7 @@ char* llGetAliasRecursive(ll* list, char* name, char* originName) {
 	
 	if (infinite == 1) {
 		// found alias is circular
-		printf("circular\n");
+		fprintf(stderr, "[xshell] %s is an infinite alias. \n", name);
 		return originName;
 	}
 	else {

@@ -9,7 +9,7 @@ unsetenv variable
 cd word (directory name)
 alias
 alias name
-alias name word (needs testing)
+alias name word
 unalias name
 bye
 ```
@@ -27,10 +27,16 @@ error (needs testing)
 background (not yet implemented, code exists)
 ```
 
+Aliases
+```
+words set as aliases are replaced.
+If an aliases is infinite, the original term is not replaced at all.
+```
+
 Environment variable expansion 
 ```
 ${variable}
-(does not check for variables in aliases)
+(any words that match an alias in a variable is not replaced, they are static terms)
 ```
 
 Wildcard matching

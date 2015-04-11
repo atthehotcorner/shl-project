@@ -37,10 +37,8 @@ void xcd(char* path) {
 }
 	
 char* xgetalias(char* name) {
-	printf("looking\n");
 	char* temp = llGetAlias(aliasTable, name);
 	//if (temp == NULL) printf(KRED "[xshell] %s was not found or is circular. \n" RESET, name);
-	printf("[%s]\n", temp);
 	return temp;
 }
 
@@ -381,7 +379,7 @@ char* expand_aliases(char* s) {
 	}
 	
 	//printf("%s\n", newStr);
-	return s;
+	return newStr;
 }
 
 char* expand_environment_variables(char* s) {
@@ -471,7 +469,7 @@ int main(int argc, char *argv[]) {
 		input = expand_aliases(input);
 		input = expand_environment_variables(input);
 		
-		printf(KCYN "%s" RESET, input);
+		//printf(KCYN "%s" RESET, input);
 		
 		yy_scan_string(input);
 		if (yyparse() == 1) recover_from_errors();
