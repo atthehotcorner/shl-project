@@ -85,15 +85,30 @@ void xexecute(ll* list) {
 
 	// Time to execute
 	int status;
+	int background = chainTable->background; // 0 - not in background, 1 - in bg
 	pid_t pid = fork();
 
 	if (pid == 0) {
-		xexecutecommand(list);
-		exit(0); // if command fails
+		node* current = list->start;
+
+		// Parse list into argv
+		char** argv = calloc(list->count + 1, sizeof(char*));
+		argv[list->count] = NULL; // NULL terminator
+
+		int i;
+		// no while loop, we need an index for argv
+		for (i = 0; i < list->count; i++) {
+			argv[i] = current->name;
+			current = current->next;
+		}
+
+		execv(argv[0], argv);
+
+		exit(0); // if returned here fatal error
 	}
 	else {
 		llFree(list); // no longer needed
-		waitpid(pid, &status, 0);
+		if (background != 1) waitpid(pid, &status, 0);
 	}
 }
 
@@ -124,28 +139,6 @@ char* xpathlookup(char* command) {
 
 	// not found
 	return NULL;
-}
-
-void xexecutecommand(ll* list) {
-	node* current = list->start;
-
-	// Parse list into argv
-	char** argv = calloc(list->count + 1, sizeof(char*));
-	argv[list->count] = NULL; // NULL terminator
-
-	int i;
-	// no while loop, we need an index for argv
-	for (i = 0; i < list->count; i++) {
-		if (strcmp(current->name, "&") == 0) {
-			// needs to be ran in the background
-		}
-		else {
-			argv[i] = current->name;
-			current = current->next;
-		}
-	}
-
-	execv(argv[0], argv);
 }
 
 //
