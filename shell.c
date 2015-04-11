@@ -155,6 +155,7 @@ void ignore(int number) {
 }
 
 void restoreio() {
+	//printf("flush\n");
    	fflush(stdin);
    	dup2(defaultstdin, STDIN_FILENO);
   	fflush(stdout);
@@ -176,7 +177,7 @@ void xshell(ll* list) {
 			fprintf(stderr, "Problem opening %s for input. \n", chainTable->fileIn);
 			chainReset(chainTable); // kill following cmds
 		}
-		fprintf(stderr, "Input from %s \n", chainTable->fileIn);
+		//fprintf(stderr, "Input from %s \n", chainTable->fileIn);
 	}
 
 	if (chainTable->fileOut != NULL) {
@@ -198,15 +199,15 @@ void xshell(ll* list) {
 			fprintf(stderr, "Cannot open %s as File IO_ERR \n", chainTable->fileErrorOut);
 			chainReset(chainTable); // kill following cmds
 		}
-		fprintf(stderr, "STDError to %s \n", chainTable->fileErrorOut);
+		//fprintf(stderr, "STDError to %s \n", chainTable->fileErrorOut);
 	}
 	else if (chainTable->fileErrorStdout == 1) {
-		fprintf(stderr, "STDError to stdout \n");
+		//fprintf(stderr, "STDError to stdout \n");
 		dup2(STDOUT_FILENO, STDERR_FILENO);
 	}
 
 	if (chainTable->background == 1) {
-		fprintf(stderr, "Process in background \n");
+		//fprintf(stderr, "Process in background \n");
 	}
 
 	// check if built in or command
@@ -469,7 +470,7 @@ int main(int argc, char *argv[]) {
 		input = expand_aliases(input);
 		input = expand_environment_variables(input);
 		
-		//printf(KCYN "%s" RESET, input);
+		//printf(KCYN "%lu" RESET, strlen(input));
 		
 		yy_scan_string(input);
 		if (yyparse() == 1) recover_from_errors();
@@ -484,7 +485,7 @@ int main(int argc, char *argv[]) {
 		}
 
 		// free up memory
-		free(input);
+		if (strlen(input) != 0) free(input);
 		chainReset(chainTable);
 		
 		//fprintf(stderr, "clear the table \n");

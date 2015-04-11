@@ -21,6 +21,7 @@ int yywrap() {
 }
 %token STDOUTAPPEND STDERROUT STDERR
 %token <strval> VAR
+%token <strval> USERNAME
 %token <strval> STRINGLITERAL
 %type <linkedlist> arguments
 %type <strval> ignore
@@ -77,37 +78,58 @@ ignore:
 		chainTable->fileIn = $2;
 	}
 	| STDOUTAPPEND VAR {
-		printf("file out append \n");
 		chainTable->fileOut = $2;
 		chainTable->fileOutMode = 1;
 	}
 	| '>' VAR {
-		printf("file out write \n");
 		chainTable->fileOut = $2;
 		chainTable->fileOutMode = 0;
 	};
 	
 argument:
-	'$' '{' VAR '}' {
-		char* value = getenv($3);
-		if (value == NULL) {
-			yyerror("variable is not defined");
-			YYERROR;
+	USERNAME {
+		if (strlen($1) == 0) {
+			$$ = getenv("HOME");
 		}
-		//printf("Replacing %s with %s \n", $3, value);
-		$$ = value;
-	}
-	| '~' VAR {
-		$$ = $2;
-		printf("user path lookup \n");
-		// look for users homepath here
-	}
-	| '~' {
-		$$ = getenv("HOME");
-	}
-	| '2' '>' VAR {
-		printf("error out \n");
-		$$ = $3;
+		else {
+			char* str = strdup($1);
+			char* slash = strstr(str, "/");
+			char* username;
+			
+			// get username
+			if (slash == NULL) username = str;
+			else {
+				if (slash - str < 1) {
+					$$ = getenv("HOME");
+					return;
+				}
+
+				username = malloc(sizeof(char) * (slash - str) + 1);
+				strncpy(username, str, slash - str);
+			}
+
+			// get working dir
+			struct passwd* userinfo = getpwnam(username);
+
+			if (userinfo == NULL) {
+				fprintf(stderr, "[xshell] User %s was not found. \n", username);
+				$$ = $1;
+				return;
+			}
+			else {
+				char* workingDir = userinfo->pw_dir;
+				char* newStr = malloc(strlen(str) + strlen(workingDir) + 1);
+				strcpy(newStr, workingDir);
+				
+				int i;
+				for (i = 0; i < strlen(str); i++) {
+					newStr[strlen(workingDir) + i] = str[strlen(username) + i];
+				}
+	
+				printf("user path lookup [%s] \n", newStr);
+				$$ = newStr;
+			}
+		}
 	}
 	| STRINGLITERAL {
 		$$ = $1;

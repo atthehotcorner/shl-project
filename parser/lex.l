@@ -4,6 +4,7 @@
 %}
 /* http://www.lysator.liu.se/c/ANSI-C-grammar-l.html */
 STRINGLITERAL [a-zA-Z_]?\"(\\.|[^\\"])*\"
+USERNAME ((^|[ \t\n\r]+)\~[0-9a-zA-Z/:.~\-?*"]*)
 VAR [0-9a-zA-Z/:.~\-?*]
 %%
 
@@ -19,6 +20,12 @@ VAR [0-9a-zA-Z/:.~\-?*]
 ">>"				return STDOUTAPPEND;
 "2>&1"				return STDERROUT;
 "2>"				return STDERR;
+
+{USERNAME}			{
+						yylval.strval = (char*)calloc(strlen(yytext)-1, sizeof(char));
+						strncpy(yylval.strval, &yytext[1], strlen(yytext)-1);
+						return USERNAME;
+					}
 
 {STRINGLITERAL}		{
 						yylval.strval = (char*)calloc(strlen(yytext)-1, sizeof(char));

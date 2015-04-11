@@ -20,17 +20,17 @@ cmd [arg]* [|cmd [arg]*]* [< fn1] [ >[>] fn2 ] [ 2>fn3 || 2>&1 ] [&]
 ```
 
 ```
-piping (needs testing)
+piping (complete, needs testing)
 input (needs testing)
 output (complete, needs testing)
 error (needs testing)
-background (not yet implemented, code exists)
+background (complete, needs testing)
 ```
 
 Aliases
 ```
 words set as aliases are replaced.
-If an aliases is infinite, the original term is not replaced at all.
+(If an aliases is infinite, the original term is not replaced at all)
 ```
 
 Environment variable expansion 
@@ -47,7 +47,7 @@ Not yet implemented
 Tilde expansion
 ```
 ~ on its own expands to home directory of the current user
-~name expands to name's home directory (not yet implemented)
+~name expands to name's home directory
 (only when ~ is not in quotes)
 ```
 

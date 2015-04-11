@@ -26,6 +26,7 @@
 #include <dirent.h>
 #include <signal.h>
 #include <unistd.h>
+#include <pwd.h>
 #include "lists/ll.h"
 #include "lists/chain.h"
 
