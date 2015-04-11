@@ -189,7 +189,7 @@ void xshell(ll* list) {
 			fprintf(stderr, "Problem opening %s for output. \n", chainTable->fileOut);
 			chainReset(chainTable); // kill following cmds
 		}
-		fprintf(stderr, "Output to %s \n", chainTable->fileOut);
+		//fprintf(stderr, "Output to %s \n", chainTable->fileOut);
 	}
 	
 	if (chainTable->fileErrorOut != NULL) {
@@ -281,7 +281,7 @@ void xshell(ll* list) {
 }
 
 char* getaline() {
-	// http://stackoverflow.com/a/314422
+	// stackoverflow 314422
 	char * line = malloc(100), * linep = line;
 	size_t lenmax = 100, len = lenmax;
 	int c;
@@ -427,7 +427,7 @@ void shell_init() {
 	defaultstdout = dup(STDOUT_FILENO);
 	defaultstderr = dup(STDERR_FILENO);
 
-	llPush(aliasTable, "a", "c a");
+	/*llPush(aliasTable, "a", "c a");
 	llPush(aliasTable, "b", "d");
 	llPush(aliasTable, "c", "a");
 	llPush(aliasTable, "d", "dfinal");
@@ -442,7 +442,7 @@ void shell_init() {
 	ll* b = llCreate(1);
 	llPush(a, "b", NULL);
 	llPush(a, "c", NULL);
-	llPush(a, "d", NULL);
+	llPush(a, "d", NULL);*/
 	
 	// disable anything that can kill your shell. 
 	/*signal(SIGINT, SIG_IGN);  // Ctrl-C
@@ -451,7 +451,7 @@ void shell_init() {
 }
 
 int recover_from_errors() {
-	fprintf(stderr, KRED "[xshell] Cannot continue, recovering... \n" RESET);
+	fprintf(stderr, KRED "[xshell] cannot continue processing, recovering... \n" RESET);
 }
 
 int main(int argc, char *argv[]) {
@@ -487,7 +487,7 @@ int main(int argc, char *argv[]) {
 		// free up memory
 		if (strlen(input) != 0) free(input);
 		chainReset(chainTable);
-		
+
 		//fprintf(stderr, "clear the table \n");
 	}
 }

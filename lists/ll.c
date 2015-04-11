@@ -254,10 +254,10 @@ void llRemove(ll* list, char* name) {
 
 void llPrint(ll* list) {
 	if (list == NULL || list->start == NULL) {
-		printf("No items found. \n");
+		printf("[xshell] no items found. \n");
 		return;
 	}
-	printf("Number of items: %d \n", list->count);
+	printf("[xshell] number of items: %d \n", list->count);
 
 	// current node
 	node* current = list->start;

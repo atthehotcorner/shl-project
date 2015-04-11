@@ -23,7 +23,7 @@ VAR [0-9a-zA-Z/:.~\-?*]
 
 {USERNAME}			{
 						yylval.strval = (char*)calloc(strlen(yytext)-1, sizeof(char));
-						strncpy(yylval.strval, &yytext[1], strlen(yytext)-1);
+						strncpy(yylval.strval, &yytext[2], strlen(yytext)-1);
 						return USERNAME;
 					}
 

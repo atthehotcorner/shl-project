@@ -6,7 +6,7 @@ Class project, details to come after due date.
 setenv variable word
 printenv
 unsetenv variable
-cd word (directory name)
+cd (directory name)
 alias
 alias name
 alias name word
@@ -16,14 +16,12 @@ bye
 
 Commands in the form of
 ```
-cmd [arg]* [|cmd [arg]*]* [< fn1] [ >[>] fn2 ] [ 2>fn3 || 2>&1 ] [&]
-```
+cmd [arg]* [|cmd [arg]*]* [< fn1] [>[>] fn2] [2>fn3 || 2>&1] [&]
 
-```
-piping (complete, needs testing)
-input (needs testing)
-output (complete, needs testing)
-error (needs testing)
+piping
+input (in progress)
+output
+error
 background (complete, needs testing)
 ```
 
@@ -41,7 +39,7 @@ ${variable}
 
 Wildcard matching
 ```
-Not yet implemented
+Not implemented
 ```
 
 Tilde expansion
@@ -53,6 +51,6 @@ Tilde expansion
 
 File name completion
 ```
-Not yet implemented
+Not implemented
 ```
 

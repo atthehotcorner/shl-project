@@ -19,7 +19,7 @@ int yywrap() {
 	char* strval;
 	void* linkedlist;
 }
-%token STDOUTAPPEND STDERROUT STDERR
+%token STDOUTAPPEND STDERROUT STDERR BACKGROUND
 %token <strval> VAR
 %token <strval> USERNAME
 %token <strval> STRINGLITERAL
@@ -45,36 +45,59 @@ arguments:
 		llPush(list, $1, NULL);
 		$$ = list;
 	}
+	| ignore {
+		ll* list = llCreate(1);
+		$$ = list;
+	}
 	| arguments '|' {
 		chainPush(chainTable, $1);
 		$$ = llCreate(1);
 	}
 	| arguments ignore {
-		// ignore
+		if (chainTable->background == 1) {
+			// make sure & is last thing processed
+			yyerror("& must be placed at the end of commands.");
+			YYERROR;
+		}
+
 		$$ = $1;
 	}
 	| arguments argument {
+		if (chainTable->background == 1) {
+			// make sure & is last thing processed
+			yyerror("& must be placed at the end of commands.");
+			YYERROR;
+		}
+		if (chainTable->fileIn != NULL || chainTable->fileOut != NULL ||
+			(chainTable->fileErrorOut == NULL && chainTable->fileErrorStdout == 1) ||
+			(chainTable->fileErrorOut != NULL && chainTable->fileErrorStdout == 0)
+		) {
+			// make sure any IO redirection is after aruguments
+			yyerror("IO redirection must be placed after any commands.");
+			YYERROR;
+		}
+	
 		llPush($1, $2, NULL);
 		$$ = $1;
 	};
 
 ignore:
 	STDERROUT {
-		printf("srderr to stdout \n");
+		//printf("srderr to stdout \n");
 		chainTable->fileErrorOut = NULL;
 		chainTable->fileErrorStdout = 1;
 	}
 	| STDERR VAR {
-		printf("srderr to file \n");
+		//printf("srderr to file \n");
 		chainTable->fileErrorOut = $2;
 		chainTable->fileErrorStdout = 0;
 	}
 	| '&' {
-		printf("external run plz \n");
+		//printf("external run plz \n");
 		chainTable->background = 1;
 	}
 	| '<' VAR {
-		printf("file in \n");
+		//printf("file in \n");
 		chainTable->fileIn = $2;
 	}
 	| STDOUTAPPEND VAR {
@@ -88,7 +111,7 @@ ignore:
 	
 argument:
 	USERNAME {
-		if (strlen($1) == 0) {
+		if (strcmp($1, "") == 0) {
 			$$ = getenv("HOME");
 		}
 		else {
@@ -112,7 +135,7 @@ argument:
 			struct passwd* userinfo = getpwnam(username);
 
 			if (userinfo == NULL) {
-				fprintf(stderr, "[xshell] User %s was not found. \n", username);
+				fprintf(stderr, "[xshell] user %s was not found. \n", username);
 				$$ = $1;
 				return;
 			}
@@ -126,7 +149,7 @@ argument:
 					newStr[strlen(workingDir) + i] = str[strlen(username) + i];
 				}
 	
-				printf("user path lookup [%s] \n", newStr);
+				//printf("user path lookup [%s] \n", newStr);
 				$$ = newStr;
 			}
 		}
