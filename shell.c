@@ -68,7 +68,7 @@ void xbye() {
 // Externals
 //
 void xexecute(ll* list) {
-	fprintf(stderr, KGRN "Executing %s \n" RESET, list->start->name);
+	//fprintf(stderr, KGRN "Executing %s \n" RESET, list->start->name);
 
 	// See if command exists
 	char* path = xpathlookup(list->start->name);
@@ -222,7 +222,8 @@ void xshell(ll* list) {
 		else if (count > 3) ignore(count - 3);
 
 		llPop(list); // ignore command name
-		xsetenv(llPop(list), llPop(list));
+		char *a = llPop(list), *b = llPop(list);
+		xsetenv(a, b);
 	}
 
 	else if (strcmp(command, "printenv") == 0) {
@@ -386,7 +387,7 @@ void shell_init() {
 }
 
 int recover_from_errors() {
-	fprintf(stderr, KRED "Cannot continue, recovering... \n" RESET);
+	fprintf(stderr, KRED "[xshell] Cannot continue, recovering... \n" RESET);
 }
 
 int main(int argc, char *argv[]) {
@@ -410,7 +411,7 @@ int main(int argc, char *argv[]) {
 		if (yyparse() == 1) recover_from_errors();
 
 		// process chain
-		chainPrint(chainTable);
+		//chainPrint(chainTable);
 		
 		ll* command = chainPop(chainTable);
 		while (command != NULL) {
@@ -422,7 +423,7 @@ int main(int argc, char *argv[]) {
 		free(input);
 		chainReset(chainTable);
 		
-		fprintf(stderr, "clear the table \n");
+		//fprintf(stderr, "clear the table \n");
 	}
 }
 

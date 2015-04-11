@@ -6,10 +6,10 @@ Class project, details to come after due date.
 setenv variable word
 printenv
 unsetenv variable
-cd word directory name
+cd word (directory name)
 alias
 alias name
-alias name word (testing needed)
+alias name word (needs testing)
 unalias name
 bye
 ```
@@ -24,16 +24,28 @@ piping (needs testing)
 input (needs testing)
 output (complete, needs testing)
 error (needs testing)
-background (in progress)
+background (Not yet implemented)
 ```
 
 Environment variable expansion 
 ```
 ${variable}
-(doesn't work when in quotes or as part of words (no whitespace inbetween))
+(does not check for variables in aliases)
 ```
 
 Wildcard matching
+```
+Not yet implemented
+```
+
+Tilde expansion
+```
+~ on its own expands to home directory of the current user
+~name expands to name's home directory (not yet implemented)
+(only when ~ is not in quotes)
+```
+
+File name completion
 ```
 Not yet implemented
 ```
