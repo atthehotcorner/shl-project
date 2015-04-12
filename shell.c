@@ -57,7 +57,7 @@ void xunalias(char* name) {
 }
 
 void xbye() {
-	printf(KCYN "\nleaving [xshell] \n\n" RESET);
+	printf(KCYN "leaving [xshell]\n" RESET);
 	llFree(aliasTable);
 	chainReset(chainTable);
 	free(chainTable);
@@ -89,15 +89,16 @@ void xexecute(ll* list) {
 	pid_t pid = fork();
 
 	if (pid == -1) {
-		fprintf(stderr, KRED "[xshell] could not create fork for %s. \n" RESET, list->start->name);
+		// error
+		fprintf(stderr, KRED "[xshell] could not fork %s. \n" RESET, list->start->name);
 		perror("error creating fork");
 		return;
 	}
-	else if (pid == 0) {
-		// In the child process
+
+	if (pid == 0) {
 		signal(SIGQUIT, SIG_DFL); // to quit child if nes
 		signal(SIGINT, SIG_DFL);
-
+		
 		node* current = list->start;
 
 		// Parse list into argv
@@ -113,11 +114,12 @@ void xexecute(ll* list) {
 
 		execve(argv[0], argv, environ);
 
-		exit(0); // if returned here fatal error
+		exit(0); // quit so your child doesn't end up in the main program
 	}
 	else {
+		// in parent
 		llFree(list); // no longer needed
-		if (background != 1) waitpid(pid, &status, 0);
+		/*if (background != 1)*/ waitpid(pid, &status, 0);
 	}
 }
 
@@ -273,7 +275,7 @@ void xshell(ll* list) {
 	else if (strcmp(command, "bye") == 0) {
 		xbye();
 	}
-
+	
 	else {
 		// try executing
 		xexecute(list);
@@ -459,7 +461,7 @@ int recover_from_errors() {
 
 int main(int argc, char *argv[]) {
 	shell_init();
-	printf(KCYN "\nstarting [xshell] \nbuilt %s %s \n\n" RESET, __DATE__, __TIME__);
+	printf(KCYN "starting [xshell] \nbuilt %s %s\n" RESET, __DATE__, __TIME__);
 	
 	int redirected = 0;
 	if (!isatty(STDIN_FILENO)) redirected = 1;
@@ -518,19 +520,80 @@ int main(int argc, char *argv[]) {
 		}
 
 		// process chain
-		//chainPrint(chainTable);
 		
-		ll* command = chainPop(chainTable);
-		while (command != NULL) {
-			xshell(command);
-			command = chainPop(chainTable);
+		// piping
+		if (chainTable->piped == 1) {
+			// so 8389033
+			// these commands are piped
+
+			int i;
+			int numPipes = chainTable->count - 1;
+			int pipefds[numPipes];
+
+			for (i = 0; i <= numPipes; i++){
+				if (pipe(pipefds + i*2) < 0) {
+					fprintf(stderr, KRED "[xshell] problem creating pipes. \n" RESET);
+					break;
+				}
+			}
+
+			ll* command = chainPop(chainTable);
+			int commandc = 0;
+
+			while (command != NULL) {
+				// if first
+				if (numPipes == chainTable->count) {
+					fprintf(stderr, KCYN "[xshell] piping commands. \n" RESET);
+				}
+			
+				// child gets input from the previous command, if it's not the first command
+				if (numPipes != chainTable->count) {
+					if (dup2(pipefds[(commandc-1)*2], 0) < 0) {
+						perror("[xshell] error in dup2");
+						break;
+					}
+				}
+				// child outputs to next command, if it's not the last command
+				if (chainTable->count != 0) {
+					if (dup2(pipefds[commandc*2+1], 1) < 0) {
+						perror("[xshell] error in dup2");
+						break;
+					}
+				}
+
+				// close all pipe-fds if last
+				if (chainTable->count == 0) {
+					int j;
+					for (j = 0; j < 2*numPipes; j++) {
+						close(pipefds[j]);
+					}
+				}
+
+				xshell(command);
+				//fprintf(stderr, "step %d\n", i);
+				command = chainPop(chainTable);
+				commandc++;
+			}
+			
+			//fprintf(stderr, "Return.");
+			
+			// parent closes all of its copies at the end
+			for (i = 0; i < 2 * numPipes; i++){
+				close(pipefds[i]);
+			}
+		}
+		else {
+			// no pipes
+			ll* command = chainPop(chainTable);
+			while (command != NULL) {
+				xshell(command);
+				command = chainPop(chainTable);
+			}
 		}
 
 		// free up memory
 		if (strlen(input) != 0) free(input);
 		chainReset(chainTable);
-
-		//fprintf(stderr, "clear the table \n");
 	}
 }
 

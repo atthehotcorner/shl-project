@@ -74,6 +74,8 @@ ll* aliasTable;
 char* chainBuffer;
 chain* chainTable; // stores parsed tokens
 
+int ab[2], bc[2], ca[2];
+
 int default_stdin;
 int default_stdout;
 int default_stderr;

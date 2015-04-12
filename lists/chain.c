@@ -8,6 +8,7 @@ chain* chainCreate(int x) {
 	command->count = 0;
 	command->background = x;
 	command->parsed = 0;
+	command->piped = 0;
 
 	command->fileIn = NULL;
 	command->fileOut = NULL;
@@ -37,6 +38,7 @@ void chainReset(chain* command) {
 	command->count = 0;
 	command->background = 0;
 	command->parsed = 0;
+	command->piped = 0;
 	command->fileIn = NULL;
 	command->fileOut = NULL;
 	command->fileOutMode = 0;

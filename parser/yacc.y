@@ -51,6 +51,7 @@ arguments:
 	}
 	| arguments '|' {
 		chainPush(chainTable, $1);
+		chainTable->piped = 1;
 		$$ = llCreate(1);
 	}
 	| arguments ignore {

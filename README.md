@@ -34,7 +34,7 @@ words set as aliases are replaced.
 Environment variable expansion 
 ```
 ${variable}
-(any words that match an alias in a variable is not replaced, they are static terms)
+(any words that match an alias in a variable are not replaced, variables are static terms)
 ```
 
 Wildcard matching
