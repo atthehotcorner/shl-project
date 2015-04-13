@@ -12,3 +12,4 @@ yacc-config:
 
 build:
 	$(CC) lex.yy.c y.tab.c lists/ll.c lists/chain.c shell.c -g -o xshell
+

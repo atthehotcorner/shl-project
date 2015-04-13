@@ -1,11 +1,25 @@
 # [xshell] Project
 Class project, details to come after due date.
 
+To compile,
+```
+make
+./xshell
+```
+
+## Files
+```
+shell.c, shell.h - contains built-in functions, execution functions, and how the shell functions.
+parser/lex.l, parser/lex.l - parses input into command tables.
+lists/chain and ll - linked list and command table container definitions.
+```
+
 ## Known issues
 ```
-[xshell] sometimes prints the current directory on the wrong line. Nonetheless, any commands given on the newline function as normal.
-[xshell] sometimes doesn't print the current directory after commands complete. Nonetheless, any commands given on the newline function as normal.
-When piping commands, [xshell] sometimes states that valid input is invalid. Nonetheless, it will still run.
+[xshell] sometimes prints the current directory incorrectly (misplaced, wrong line). Nonetheless, any commands typed should function as normal.
+[xshell] sometimes doesn't print the current directory after commands complete, especially with IO redirection. Nonetheless, any commands typed should function as normal.
+When piping commands, [xshell] sometimes states that valid input is invalid. Nonetheless, it will still try to run.
+[xshell] may crash or fall into an infinite loop on IO redirection.
 ```
 
 ## Features
