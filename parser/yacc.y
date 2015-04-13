@@ -163,8 +163,9 @@ argument:
 		// so 4204666
 		char* str = strdup($1);
 		char* wildcard = strstr(str, "*");
+		char* question = strstr(str, "?");
 
-		if (wildcard != NULL) {
+		if (wildcard != NULL || question != NULL) {
 			int found = 0;
 			DIR *d;
 			struct dirent *dir;
@@ -175,7 +176,7 @@ argument:
 						// is really a file, now match
 						if (match(str, dir->d_name)) {
 							found = 1;
-							fprintf(stderr, "[xshell] replacing %s with %s \n", str, dir->d_name);
+							fprintf(stderr, KBLU "[xshell] replacing %s with %s \n" RESET, str, dir->d_name);
 							str = strdup(dir->d_name);
 							break;
 						}
@@ -189,9 +190,11 @@ argument:
 			
 			if (found == 0) {
 				// remove *
-				int idxToDel = wildcard - str;
-				memmove(&str[idxToDel], &str[idxToDel + 1], strlen(str) - idxToDel);
-				//printf("[%d] %s\n", idxToDel, str);
+				if (wildcard != NULL) {
+					int idxToDel = wildcard - str;
+					memmove(&str[idxToDel], &str[idxToDel + 1], strlen(str) - idxToDel);
+					//printf("[%d] %s\n", idxToDel, str);
+				}
 			}
 		}
 		

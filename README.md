@@ -1,10 +1,11 @@
-# [xsh-ll] Project
+# [xshell] Project
 Class project, details to come after due date.
 
 ## Known issues
 ```
-When piping commands, [xshell] sometimes states that valid input is invalid. Nonetheless, it will still run.
+[xshell] sometimes prints the current directory on the wrong line. Nonetheless, any commands given on the newline function as normal.
 [xshell] sometimes doesn't print the current directory after commands complete. Nonetheless, any commands given on the newline function as normal.
+When piping commands, [xshell] sometimes states that valid input is invalid. Nonetheless, it will still run.
 ```
 
 ## Features
