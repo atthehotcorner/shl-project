@@ -26,10 +26,10 @@ Commands in the form of
 cmd [arg]* [|cmd [arg]*]* [< fn1] [>[>] fn2] [2>fn3 || 2>&1] [&]
 
 piping
-input (in progress)
+input
 output
 error
-background (complete, needs testing)
+background
 ```
 
 Aliases

@@ -57,7 +57,7 @@ void xunalias(char* name) {
 }
 
 void xbye() {
-	printf(KCYN "leaving [xshell]\n" RESET);
+	printf(KBLU "leaving [xshell]\n" RESET);
 	llFree(aliasTable);
 	chainReset(chainTable);
 	free(chainTable);
@@ -459,7 +459,7 @@ int recover_from_errors() {
 
 int main(int argc, char *argv[]) {
 	shell_init();
-	printf(KCYN "starting [xshell] \nbuilt %s %s\n" RESET, __DATE__, __TIME__);
+	printf(KBLU "starting [xshell] \nbuilt %s %s\n" RESET, __DATE__, __TIME__);
 	
 	int redirected = 0;
 	if (!isatty(STDIN_FILENO)) redirected = 1;
@@ -496,7 +496,7 @@ int main(int argc, char *argv[]) {
 		chainTable->parsed = 1;
 
 		// if there is input, reparse
-		if (chainTable->fileIn != NULL) {
+		/*if (chainTable->fileIn != NULL) {
 			FILE* in = freopen(chainTable->fileIn, "r", stdin);
 			if (in == NULL) {
 				restoreio();
@@ -515,7 +515,7 @@ int main(int argc, char *argv[]) {
 
 		   	fflush(stdin);
 		   	dup2(default_stdin, STDIN_FILENO);
-		}
+		}*/
 
 		// process chain
 		
@@ -574,6 +574,16 @@ int main(int argc, char *argv[]) {
 				if (numPipes == chainTable->count) {
 					//fprintf(stderr, KCYN "[xshell] piping commands. \n" RESET);
 					chainTable->firstpiped = 1;
+					
+					// Check for io output redirections
+					if (chainTable->fileIn != NULL) {
+						FILE* in = freopen(chainTable->fileIn, "r", stdin);
+						if (in == NULL) {
+							restoreio();
+							fprintf(stderr, "[xshell] problem opening %s for input. \n", chainTable->fileIn);
+							chainReset(chainTable); // kill following cmds
+						}
+					}
 				}
 				else chainTable->firstpiped = 0;
 			
@@ -631,6 +641,15 @@ int main(int argc, char *argv[]) {
 			// no pipes
 			
 			// Check for io output redirections
+			if (chainTable->fileIn != NULL) {
+				FILE* in = freopen(chainTable->fileIn, "r", stdin);
+				if (in == NULL) {
+					restoreio();
+					fprintf(stderr, "[xshell] problem opening %s for input. \n", chainTable->fileIn);
+					chainReset(chainTable); // kill following cmds
+				}
+			}
+
 			if (chainTable->fileOut != NULL) {
 				char* mode;
 				if (chainTable->fileOutMode == 1) mode = "a";
