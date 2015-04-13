@@ -397,9 +397,9 @@ char* expand_environment_variables(char* s) {
 	int postSize = length - (xx-s) - 1; // -1 for }
 	int varSize = length - preSize - postSize - 3; // -3 for ${}
 
-	char* pre = malloc(sizeof(char) * (preSize + 1));
-	char* post = malloc(sizeof(char) * (postSize + 1));
-	char* var = malloc(sizeof(char) * (varSize + 1));
+	char* pre = malloc(sizeof(char) * (preSize + 2));
+	char* post = malloc(sizeof(char) * (postSize + 2));
+	char* var = malloc(sizeof(char) * (varSize + 2));
 
 	int i;
 	for (i = 0; s[i]; i++) {
@@ -411,7 +411,7 @@ char* expand_environment_variables(char* s) {
 	char* y = getenv(var);
 	if (y == NULL) {
 		fprintf(stderr, KRED "[xshell] %s is not a valid environment variable. \n" RESET, var);
-		return NULL;
+		return s;
 	}
 	
 	strcat(pre, y);
@@ -472,17 +472,19 @@ int main(int argc, char *argv[]) {
 
 	while (1) {
 		// print current directory
-		char* pwd = get_current_dir_name();
-		printf(KMAG "%s> " RESET, pwd);
+		if (redirected == 0) {
+			char* pwd = get_current_dir_name();
+			printf(KMAG "%s> " RESET, pwd);
+		}
 
 		// get input
 		char* input = getaline();
 		if (redirected == 1) {
 			if (strlen(input) == 0) {
-				printf("\n");
+				//printf("\n");
 				xbye();
 			}
-			else printf("%s", input);
+			//else printf("%s", input);
 		}
 
 		// process input
@@ -532,6 +534,7 @@ int main(int argc, char *argv[]) {
 					restoreio();
 					fprintf(stderr, "Cannot open %s as File IO_ERR \n", chainTable->fileErrorOut);
 					chainReset(chainTable); // kill following cmds
+					return;
 				}
 				//fprintf(stderr, "STDError to %s \n", chainTable->fileErrorOut);
 			}
@@ -552,6 +555,7 @@ int main(int argc, char *argv[]) {
 					restoreio();
 					fprintf(stderr, "Problem opening %s for output. \n", chainTable->fileOut);
 					chainReset(chainTable); // kill following cmds
+					return;
 				}
 			}
 
@@ -568,6 +572,7 @@ int main(int argc, char *argv[]) {
 
 			ll* command = chainPop(chainTable);
 			int commandc = 0;
+			int inputFail = 0;
 
 			while (command != NULL) {
 				// if first
@@ -582,6 +587,8 @@ int main(int argc, char *argv[]) {
 							restoreio();
 							fprintf(stderr, "[xshell] problem opening %s for input. \n", chainTable->fileIn);
 							chainReset(chainTable); // kill following cmds
+							inputFail = 1;
+							break;
 						}
 					}
 				}
@@ -630,6 +637,8 @@ int main(int argc, char *argv[]) {
 				commandc++;
 			}
 			
+			if (inputFail == 1) return;
+			
 			//fprintf(stderr, "Return.");
 			
 			// parent closes all of its copies at the end
@@ -641,12 +650,13 @@ int main(int argc, char *argv[]) {
 			// no pipes
 			
 			// Check for io output redirections
-			if (chainTable->fileIn != NULL) {
+			if (chainTable->fileIn != NULL) {				
 				FILE* in = freopen(chainTable->fileIn, "r", stdin);
 				if (in == NULL) {
 					restoreio();
 					fprintf(stderr, "[xshell] problem opening %s for input. \n", chainTable->fileIn);
 					chainReset(chainTable); // kill following cmds
+					return;
 				}
 			}
 
@@ -661,6 +671,7 @@ int main(int argc, char *argv[]) {
 					restoreio();
 					fprintf(stderr, "Problem opening %s for output. \n", chainTable->fileOut);
 					chainReset(chainTable); // kill following cmds
+					return;
 				}
 			}
 	
@@ -671,6 +682,7 @@ int main(int argc, char *argv[]) {
 					restoreio();
 					fprintf(stderr, "Cannot open %s as File IO_ERR \n", chainTable->fileErrorOut);
 					chainReset(chainTable); // kill following cmds
+					return;
 				}
 				//fprintf(stderr, "STDError to %s \n", chainTable->fileErrorOut);
 			}

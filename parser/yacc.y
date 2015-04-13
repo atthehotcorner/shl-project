@@ -126,7 +126,6 @@ argument:
 			else {
 				if (slash - str < 1) {
 					$$ = getenv("HOME");
-					return;
 				}
 
 				username = malloc(sizeof(char) * (slash - str) + 1);
@@ -139,7 +138,6 @@ argument:
 			if (userinfo == NULL) {
 				fprintf(stderr, "[xshell] user %s was not found. \n", username);
 				$$ = $1;
-				return;
 			}
 			else {
 				char* workingDir = userinfo->pw_dir;

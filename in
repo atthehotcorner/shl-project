@@ -3,5 +3,4 @@ pwd
 ls -F
 printenv
 alias
-cd
-
+echo life | rev > output
