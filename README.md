@@ -1,5 +1,4 @@
 # [xshell] Project
-Class project, details to come after due date.
 
 To compile,
 ```
