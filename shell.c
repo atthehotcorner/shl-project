@@ -99,6 +99,10 @@ void xexecute(ll* list) {
 		signal(SIGQUIT, SIG_DFL); // to quit child if nes
 		signal(SIGINT, SIG_DFL);
 		
+		// dont show output in shell if not redirected and in background
+		if (background == 1 && chainTable->fileOut == NULL) freopen("/dev/null", "w", stdout);
+		if (background == 1 && (chainTable->fileErrorOut == NULL && chainTable->fileErrorStdout == 0)) freopen("/dev/null", "w", stderr);
+		
 		node* current = list->start;
 
 		// Parse list into argv
@@ -119,7 +123,9 @@ void xexecute(ll* list) {
 	else {
 		// in parent
 		llFree(list); // no longer needed
-		/*if (background != 1)*/ waitpid(pid, &status, 0);
+		if ((chainTable->piped == 0 && background == 0) || (chainTable->piped == 1 && chainTable->firstpiped == 1 && background == 0)) {
+			waitpid(pid, &status, 0);
+		}
 	}
 }
 
@@ -179,41 +185,6 @@ void xshell(ll* list) {
 	if (list == NULL || list->start == NULL) return;
 	char* command = list->start->name;
 	int count = list->count;
-
-	// Check for io output redirections
-	if (chainTable->fileOut != NULL) {
-		char* mode;
-		if (chainTable->fileOutMode == 1) mode = "a";
-		else mode = "w";
-
-		FILE* out = freopen(chainTable->fileOut, mode, stdout);
-		if (out == NULL) {
-			// couldnt open file
-			restoreio();
-			fprintf(stderr, "Problem opening %s for output. \n", chainTable->fileOut);
-			chainReset(chainTable); // kill following cmds
-		}
-		//fprintf(stderr, "Output to %s \n", chainTable->fileOut);
-	}
-	
-	if (chainTable->fileErrorOut != NULL) {
-		FILE* errout = freopen(chainTable->fileErrorOut, "a", stderr);
-		if (errout == NULL) {
-			// couldnt open file
-			restoreio();
-			fprintf(stderr, "Cannot open %s as File IO_ERR \n", chainTable->fileErrorOut);
-			chainReset(chainTable); // kill following cmds
-		}
-		//fprintf(stderr, "STDError to %s \n", chainTable->fileErrorOut);
-	}
-	else if (chainTable->fileErrorStdout == 1) {
-		//fprintf(stderr, "STDError to stdout \n");
-		dup2(STDOUT_FILENO, STDERR_FILENO);
-	}
-
-	if (chainTable->background == 1) {
-		//fprintf(stderr, "Process in background \n");
-	}
 
 	// Check if built in or command
 	if (strcmp(command, "setenv") == 0) {
@@ -525,6 +496,37 @@ int main(int argc, char *argv[]) {
 		if (chainTable->piped == 1) {
 			// so 8389033
 			// these commands are piped
+			
+			// redirect all errors
+			if (chainTable->fileErrorOut != NULL) {
+				FILE* errout = freopen(chainTable->fileErrorOut, "a", stderr);
+				if (errout == NULL) {
+					// couldnt open file
+					restoreio();
+					fprintf(stderr, "Cannot open %s as File IO_ERR \n", chainTable->fileErrorOut);
+					chainReset(chainTable); // kill following cmds
+				}
+				//fprintf(stderr, "STDError to %s \n", chainTable->fileErrorOut);
+			}
+			else if (chainTable->fileErrorStdout == 1) {
+				//fprintf(stderr, "STDError to stdout \n");
+				dup2(STDOUT_FILENO, STDERR_FILENO);
+			}
+			
+			// Check for io output redirections
+			if (chainTable->fileOut != NULL) {
+				char* mode;
+				if (chainTable->fileOutMode == 1) mode = "a";
+				else mode = "w";
+
+				FILE* out = freopen(chainTable->fileOut, mode, stdout);
+				if (out == NULL) {
+					// couldnt open file
+					restoreio();
+					fprintf(stderr, "Problem opening %s for output. \n", chainTable->fileOut);
+					chainReset(chainTable); // kill following cmds
+				}
+			}
 
 			int i;
 			int numPipes = chainTable->count - 1;
@@ -543,8 +545,10 @@ int main(int argc, char *argv[]) {
 			while (command != NULL) {
 				// if first
 				if (numPipes == chainTable->count) {
-					fprintf(stderr, KCYN "[xshell] piping commands. \n" RESET);
+					//fprintf(stderr, KCYN "[xshell] piping commands. \n" RESET);
+					chainTable->firstpiped = 1;
 				}
+				else chainTable->firstpiped = 0;
 			
 				// child gets input from the previous command, if it's not the first command
 				if (numPipes != chainTable->count) {
@@ -567,6 +571,20 @@ int main(int argc, char *argv[]) {
 					for (j = 0; j < 2*numPipes; j++) {
 						close(pipefds[j]);
 					}
+
+					if (chainTable->fileOut != NULL) {
+						char* mode;
+						if (chainTable->fileOutMode == 1) mode = "a";
+						else mode = "w";
+
+						FILE* out = freopen(chainTable->fileOut, mode, stdout);
+						if (out == NULL) {
+							// couldnt open file
+							restoreio();
+							fprintf(stderr, "Problem opening %s for output. \n", chainTable->fileOut);
+							chainReset(chainTable); // kill following cmds
+						}
+					}
 				}
 
 				xshell(command);
@@ -584,11 +602,48 @@ int main(int argc, char *argv[]) {
 		}
 		else {
 			// no pipes
+			
+			// Check for io output redirections
+			if (chainTable->fileOut != NULL) {
+				char* mode;
+				if (chainTable->fileOutMode == 1) mode = "a";
+				else mode = "w";
+
+				FILE* out = freopen(chainTable->fileOut, mode, stdout);
+				if (out == NULL) {
+					// couldnt open file
+					restoreio();
+					fprintf(stderr, "Problem opening %s for output. \n", chainTable->fileOut);
+					chainReset(chainTable); // kill following cmds
+				}
+			}
+	
+			if (chainTable->fileErrorOut != NULL) {
+				FILE* errout = freopen(chainTable->fileErrorOut, "a", stderr);
+				if (errout == NULL) {
+					// couldnt open file
+					restoreio();
+					fprintf(stderr, "Cannot open %s as File IO_ERR \n", chainTable->fileErrorOut);
+					chainReset(chainTable); // kill following cmds
+				}
+				//fprintf(stderr, "STDError to %s \n", chainTable->fileErrorOut);
+			}
+			else if (chainTable->fileErrorStdout == 1) {
+				//fprintf(stderr, "STDError to stdout \n");
+				dup2(STDOUT_FILENO, STDERR_FILENO);
+			}
+
+			if (chainTable->background == 1) {
+				//fprintf(stderr, "Process in background \n");
+			}
+			
 			ll* command = chainPop(chainTable);
 			while (command != NULL) {
 				xshell(command);
 				command = chainPop(chainTable);
 			}
+
+			restoreio();
 		}
 
 		// free up memory

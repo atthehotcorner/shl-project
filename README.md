@@ -1,6 +1,12 @@
 # [xsh-ll] Project
 Class project, details to come after due date.
 
+## Known issues
+```
+When piping commands, [xshell] sometimes states that valid input is invalid. Nonetheless, it will still run.
+[xshell] sometimes doesn't print the current directory after commands complete. Nonetheless, any commands given on the newline function as normal.
+```
+
 ## Features
 ```
 setenv variable word
