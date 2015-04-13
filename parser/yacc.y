@@ -160,7 +160,42 @@ argument:
 		$$ = $1;
 	}
 	| VAR {
-		$$ = $1;
+		// so 4204666
+		char* str = strdup($1);
+		char* wildcard = strstr(str, "*");
+
+		if (wildcard != NULL) {
+			int found = 0;
+			DIR *d;
+			struct dirent *dir;
+			d = opendir(".");
+			if (d) {
+				while ((dir = readdir(d)) != NULL) {
+					if (dir->d_type == DT_REG) {
+						// is really a file, now match
+						if (match(str, dir->d_name)) {
+							found = 1;
+							fprintf(stderr, "[xshell] replacing %s with %s \n", str, dir->d_name);
+							str = strdup(dir->d_name);
+							break;
+						}
+						//else printf("not a match [%s] \n", dir->d_name);
+					}
+				}
+				closedir(d);
+				//printf("%s", str);
+				$$ = str;
+			}
+			
+			if (found == 0) {
+				// remove *
+				int idxToDel = wildcard - str;
+				memmove(&str[idxToDel], &str[idxToDel + 1], strlen(str) - idxToDel);
+				//printf("[%d] %s\n", idxToDel, str);
+			}
+		}
+		
+		$$ = str;		
 	};
 %%
 

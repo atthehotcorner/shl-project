@@ -45,7 +45,9 @@ ${variable}
 
 Wildcard matching
 ```
-Not implemented
+Variables with * and ? are replaced with alphabetically sorted filenames in the working directory that match the pattern.
+* matches any string, including null string
+? matches any single character
 ```
 
 Tilde expansion

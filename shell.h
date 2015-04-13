@@ -2,9 +2,6 @@
 #define SHELL
 
 // General
-#define true 		1
-#define false 		0
-
 #define OK 			0
 #define SYSERR 		1
 
@@ -28,6 +25,7 @@
 #include <unistd.h>
 #include <pwd.h>
 #include <fcntl.h>
+#include <fnmatch.h>
 #include "lists/ll.h"
 #include "lists/chain.h"
 
@@ -42,6 +40,7 @@
   printf(KNRM "normal\n" RESET);
 */
 
+typedef enum { false, true } bool;
 void xsetenv(char* name, char* value);
 void xprintenv();
 void xunsetenv(char* name);
@@ -58,6 +57,8 @@ void xbye();
 void xexecute(ll* list);
 char* xpathlookup(char* command);
 void xexecutecommand(ll* list);
+
+bool match(char *first, char * second);
 
 void restoreio();
 char* getaline();
